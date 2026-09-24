@@ -88,7 +88,7 @@
     }
 
     body {
-      cursor: none; /* 標準カーソルを非表示にしてカスタムカーソルを適用 */
+      cursor: none;
     }
     a, button, input {
       cursor: none;
@@ -104,7 +104,6 @@
   <!-- ヘッダー -->
   <header class="bg-white border-b border-slate-200 sticky top-0 z-40 px-6 py-3 flex items-center justify-between shadow-sm">
     <div class="flex items-center space-x-3">
-      <!-- アップロードされたD-Taxロゴに置き換え -->
       <img src="image/dtaxlogo.png" alt="D-Tax Logo" class="h-9 w-auto object-contain">
       <span class="text-sm font-semibold tracking-tight text-slate-500 border-l pl-3 border-slate-300">Drive Search Portal</span>
     </div>
@@ -116,7 +115,7 @@
         </button>
       </div>
 
-      <!-- ハンバーガーメニューボタン（ログイン後または常時表示） -->
+      <!-- ハンバーガーメニューボタン -->
       <div class="relative">
         <button onclick="toggleMenu()" class="w-10 h-10 bg-slate-100 hover:bg-slate-200 rounded-xl flex flex-col items-center justify-center space-y-1 transition">
           <span class="w-5 h-0.5 bg-slate-700 rounded-full"></span>
@@ -124,7 +123,6 @@
           <span class="w-5 h-0.5 bg-slate-700 rounded-full"></span>
         </button>
 
-        <!-- ドロップダウンメニュー -->
         <div id="dropdownMenu" class="hidden absolute right-0 mt-2 w-56 bg-white border border-slate-200 rounded-2xl shadow-xl py-2 z-50">
           <div class="px-4 py-2 border-b border-slate-100">
             <p class="text-xs font-medium text-slate-400">メニュー</p>
@@ -132,9 +130,7 @@
           <a href="https://d-tax.github.io/dtax_freee/" target="_blank" class="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2 transition">
             <span>🔗</span> D-tax freeeポータル
           </a>
-          <div id="menuAuthAction" class="border-t border-slate-100 pt-1 mt-1">
-            <!-- ログアウトボタンはログイン時に動的に表示されます -->
-          </div>
+          <div id="menuAuthAction" class="border-t border-slate-100 pt-1 mt-1"></div>
         </div>
       </div>
     </div>
@@ -145,41 +141,43 @@
     <!-- ログイン前案内 -->
     <div id="welcomeView" class="text-center py-20">
       <h2 class="text-3xl font-bold mb-4">Googleドライブのファイルを知的に検索</h2>
-      <p class="text-slate-500 mb-8 max-w-lg mx-auto">「Googleログイン」を行って権限を許可すると、ご自身のドライブ内および共有アイテムのファイルを一覧・検索できるようになります。</p>
+      <p class="text-slate-500 mb-8 max-w-lg mx-auto">「Googleログイン」を行って権限を許可すると、ご自身のドライブ内のファイルをAIと対話しながら探し出せるようになります。</p>
       <button onclick="handleAuthClick()" class="bg-gradient-to-r from-pink-500 to-indigo-600 text-white px-8 py-3 rounded-full font-medium shadow-lg hover:opacity-90 transition">
         ドライブ連携をはじめる
       </button>
     </div>
 
-    <!-- ログイン後：検索＆ファイル一覧ビュー -->
+    <!-- ログイン後：ファイル一覧ビュー ＆ チャット誘導 -->
     <div id="portalView" class="hidden space-y-6">
-      <!-- 検索バー -->
-      <div class="relative max-w-2xl mx-auto">
-        <input type="text" id="searchInput" placeholder="ファイル名やキーワードで検索..." class="w-full pl-12 pr-4 py-4 bg-white border border-slate-200 rounded-2xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-lg">
-        <svg class="w-6 h-6 text-slate-400 absolute left-4 top-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+      <div class="bg-indigo-50 border border-indigo-100 rounded-2xl p-6 text-center">
+        <h3 class="text-lg font-bold text-indigo-900 mb-2">🤖 AIドライブアシスタント起動中</h3>
+        <p class="text-sm text-indigo-700 max-w-xl mx-auto">右下のチャットボタン（💬）を開いて、<br>「去年の資料どこだっけ？」など、記憶を頼りに話しかけてみてください。</p>
+      </div>
+
+      <div class="flex items-center justify-between pt-2">
+        <h3 class="font-bold text-slate-700 text-lg">📁 読み込み済みファイル一覧</h3>
+        <span id="fileCountBadge" class="text-xs bg-slate-200 text-slate-600 px-3 py-1 rounded-full font-medium">0件</span>
       </div>
 
       <!-- ファイルカード一覧 -->
-      <div id="fileList" class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
-        <!-- 動的にJavaScriptで挿入されます -->
-      </div>
+      <div id="fileList" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
     </div>
   </main>
 
   <!-- 右下のAIチャットウィジェット -->
   <div class="fixed bottom-6 right-6 z-50">
-    <div id="chatWindow" class="hidden w-80 sm:w-96 bg-white border border-slate-200 rounded-2xl shadow-2xl flex flex-col h-[450px] mb-4 overflow-hidden transition-all duration-300">
+    <div id="chatWindow" class="hidden w-80 sm:w-96 bg-white border border-slate-200 rounded-2xl shadow-2xl flex flex-col h-[480px] mb-4 overflow-hidden transition-all duration-300">
       <div class="bg-indigo-600 text-white px-4 py-3 flex items-center justify-between">
         <span class="font-medium text-sm flex items-center gap-2">🤖 ドライブAIアシスタント</span>
         <button onclick="toggleChat()" class="text-white hover:opacity-70 text-sm font-bold">✕</button>
       </div>
       <div id="chatMessages" class="flex-1 p-4 overflow-y-auto space-y-3 text-sm bg-slate-50">
-        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm max-w-[85%]">
-          こんにちは！ドライブ内のファイルについて何でも聞いてください。「先月の見積書どこだっけ？」などお答えします。
+        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm max-w-[90%]">
+          こんにちは！Googleログインしてドライブを読み込んだら、右下のチャットで何でも聞いてください。「あのときの請求書どこだっけ？」などとお答えします！
         </div>
       </div>
       <div class="p-3 bg-white border-t border-slate-200 flex gap-2">
-        <input type="text" id="chatInput" placeholder="AIに質問する..." class="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        <input type="text" id="chatInput" placeholder="AIに質問する..." class="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" onkeypress="if(event.key === 'Enter') sendChatMessage()">
         <button onclick="sendChatMessage()" class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-indigo-700 transition">送信</button>
       </div>
     </div>
@@ -189,26 +187,29 @@
   </div>
 
   <script>
-    // --- 演出関連のスクリプト ---
+    // --- 設定項目 ---
+    const CLIENT_ID = '554521661384-kpp41s620jutab56eu2qi0b7bcbrfgl6.apps.googleusercontent.com'; // Google OAuth クライアントID
+    const GEMINI_API_KEY = 'AQ.Ab8RN6JZMu5ZQa5PxTDq-cE3l64OZhx2-lptnkCD_4uxXvfYLw'; // ★ ここをご自身のGemini APIキーに書き換えてください
+    const SCOPES = 'https://www.googleapis.com/auth/drive.readonly';
+
+    let tokenClient;
+    let accessToken = null;
+    let allFiles = [];
+
+    // --- 演出関連 ---
     const cursorDot = document.getElementById('cursorDot');
     const cursorGlow = document.getElementById('cursorGlow');
-    let mouseX = 0, mouseY = 0;
-    let glowX = 0, glowY = 0;
+    let mouseX = 0, mouseY = 0, glowX = 0, glowY = 0;
 
     window.addEventListener('mousemove', (e) => {
-      mouseX = e.clientX;
-      mouseY = e.clientY;
-      cursorDot.style.opacity = '1';
-      cursorGlow.style.opacity = '1';
-      cursorDot.style.left = `${mouseX}px`;
-      cursorDot.style.top = `${mouseY}px`;
+      mouseX = e.clientX; mouseY = e.clientY;
+      cursorDot.style.opacity = '1'; cursorGlow.style.opacity = '1';
+      cursorDot.style.left = `${mouseX}px`; cursorDot.style.top = `${mouseY}px`;
     });
 
     function animateGlow() {
-      glowX += (mouseX - glowX) * 0.15;
-      glowY += (mouseY - glowY) * 0.15;
-      cursorGlow.style.left = `${glowX}px`;
-      cursorGlow.style.top = `${glowY}px`;
+      glowX += (mouseX - glowX) * 0.15; glowY += (mouseY - glowY) * 0.15;
+      cursorGlow.style.left = `${glowX}px`; cursorGlow.style.top = `${glowY}px`;
       requestAnimationFrame(animateGlow);
     }
     animateGlow();
@@ -216,34 +217,14 @@
     window.addEventListener('mousedown', (e) => {
       const ripple = document.createElement('div');
       ripple.className = 'ripple-wave';
-      ripple.style.left = `${e.clientX}px`;
-      ripple.style.top = `${e.clientY}px`;
+      ripple.style.left = `${e.clientX}px`; ripple.style.top = `${e.clientY}px`;
       document.body.appendChild(ripple);
       setTimeout(() => ripple.remove(), 800);
     });
 
-    // --- ハンバーガーメニューの開閉 ---
     function toggleMenu() {
-      const menu = document.getElementById('dropdownMenu');
-      menu.classList.toggle('hidden');
+      document.getElementById('dropdownMenu').classList.toggle('hidden');
     }
-
-    // 画面外クリックでメニューを閉じる
-    window.addEventListener('click', (e) => {
-      const menu = document.getElementById('dropdownMenu');
-      const btn = e.target.closest('button');
-      if (!menu.contains(e.target) && (!btn || !btn.onclick?.toString().includes('toggleMenu'))) {
-        menu.classList.add('hidden');
-      }
-    });
-
-    // --- Google API 連携関連 ---
-    const CLIENT_ID = '554521661384-kpp41s620jutab56eu2qi0b7bcbrfgl6.apps.googleusercontent.com'; // ご自身のクライアントIDを設定してください
-    const SCOPES = 'https://www.googleapis.com/auth/drive.readonly';
-
-    let tokenClient;
-    let accessToken = null;
-    let allFiles = [];
 
     window.onload = function () {
       tokenClient = google.accounts.oauth2.initTokenClient({
@@ -261,19 +242,14 @@
     };
 
     function handleAuthClick() {
-      if (CLIENT_ID.includes('YOUR_GOOGLE_CLIENT_ID')) {
-        alert('Google Cloud (GCP) で作成した「クライアントID」をコード内の CLIENT_ID 変数に設定してください。');
-        return;
-      }
       tokenClient.requestAccessToken({ prompt: 'consent' });
     }
 
     function onLoginSuccess() {
       document.getElementById('welcomeView').classList.add('hidden');
       document.getElementById('portalView').classList.remove('hidden');
-      document.getElementById('auth-section').innerHTML = '<span class="text-xs font-medium text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-200">● 連携済み</span>';
+      document.getElementById('auth-section').innerHTML = '<span class="text-xs font-medium text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-200">● ドライブ連携済み</span>';
       
-      // メニュー内にログアウトボタンを追加
       document.getElementById('menuAuthAction').innerHTML = `
         <button onclick="handleLogout()" class="w-full text-left px-4 py-2.5 text-sm text-rose-600 hover:bg-rose-50 flex items-center gap-2 transition">
           <span>🚪</span> Googleアカウント ログアウト
@@ -283,11 +259,9 @@
       fetchDriveFiles();
     }
 
-    // ログアウト処理
     function handleLogout() {
       accessToken = null;
       allFiles = [];
-      // 画面の状態をリセット
       document.getElementById('portalView').classList.add('hidden');
       document.getElementById('welcomeView').classList.remove('hidden');
       document.getElementById('auth-section').innerHTML = `
@@ -299,16 +273,21 @@
       toggleMenu();
     }
 
-    // Googleドライブのファイルをフェッチする
+    // Googleドライブからファイルを取得
     async function fetchDriveFiles() {
       if (!accessToken) return;
       try {
-        const response = await fetch('https://www.googleapis.com/drive/v3/files?pageSize=50&fields=files(id,name,webViewLink,iconLink,mimeType,modifiedTime)', {
+        const response = await fetch('https://www.googleapis.com/drive/v3/files?pageSize=100&fields=files(id,name,webViewLink,iconLink,mimeType,modifiedTime,description)', {
           headers: { 'Authorization': `Bearer ${accessToken}` }
         });
         const data = await response.json();
         allFiles = data.files || [];
+        
+        document.getElementById('fileCountBadge').innerText = `${allFiles.length}件`;
         renderFiles(allFiles);
+
+        // チャットへ初期案内メッセージ
+        appendChatMessage('AIアシスタント', `ドライブから ${allFiles.length} 件のファイルを読み込みました！「去年の資料どこだっけ？」など何でも聞いてください。`, false);
       } catch (err) {
         console.error('ファイル取得エラー:', err);
       }
@@ -322,47 +301,119 @@
       }
 
       listContainer.innerHTML = files.map(file => `
-        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition flex items-start justify-between gap-3">
-          <div class="flex items-start gap-3 min-w-0">
-            <span class="text-2xl mt-1">📄</span>
-            <div class="min-w-0">
-              <h3 class="font-medium text-slate-900 truncate" title="${file.name}">${file.name}</h3>
-              <p class="text-xs text-slate-400 mt-1">更新日: ${new Date(file.modifiedTime).toLocaleDateString()}</p>
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition flex flex-col justify-between gap-3">
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex items-start gap-3 min-w-0">
+              <span class="text-2xl mt-1">📄</span>
+              <div class="min-w-0">
+                <h3 class="font-medium text-slate-900 truncate" title="${file.name}">${file.name}</h3>
+                <p class="text-xs text-slate-400 mt-0.5">更新日: ${new Date(file.modifiedTime).toLocaleDateString()}</p>
+              </div>
             </div>
+            <a href="${file.webViewLink}" target="_blank" class="shrink-0 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 text-slate-600 px-3 py-1.5 rounded-xl text-xs font-medium transition">
+              開く ↗
+            </a>
           </div>
-          <a href="${file.webViewLink}" target="_blank" class="shrink-0 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 text-slate-600 px-3 py-1.5 rounded-xl text-xs font-medium transition">
-            開く ↗
-          </a>
+          ${file.description ? `
+            <div class="bg-slate-50 border border-slate-100 p-2 rounded-xl text-xs text-slate-600 truncate" title="${file.description}">
+              🏷️ ${escapeHtml(file.description)}
+            </div>
+          ` : ''}
         </div>
       `).join('');
     }
 
-    // 検索窓のフィルタリング
-    document.getElementById('searchInput').addEventListener('input', (e) => {
-      const keyword = e.target.value.toLowerCase();
-      const filtered = allFiles.filter(f => f.name.toLowerCase().includes(keyword));
-      renderFiles(filtered);
-    });
-
-    // チャットウィジェットの開閉
-    function toggleChat() {
-      const chatWin = document.getElementById('chatWindow');
-      chatWin.classList.toggle('hidden');
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
     }
 
-    function sendChatMessage() {
-      const input = document.getElementById('chatInput');
-      const text = input.value.trim();
-      if (!text) return;
+    // --- チャット機能 & Gemini API 連携 ---
+    function toggleChat() {
+      document.getElementById('chatWindow').classList.toggle('hidden');
+    }
 
+    function appendChatMessage(sender, text, isUser = false) {
       const messages = document.getElementById('chatMessages');
-      messages.innerHTML += `<div class="bg-indigo-50 text-indigo-900 p-3 rounded-xl border border-indigo-100 ml-auto max-w-[85%]" style="cursor:none;">${text}</div>`;
+      const alignClass = isUser ? 'ml-auto bg-indigo-50 text-indigo-900 border-indigo-100' : 'bg-white text-slate-800 border-slate-200 shadow-sm';
+      
+      messages.innerHTML += `
+        <div class="p-3 rounded-xl border max-w-[90%] ${alignClass}" style="cursor:none;">
+          <p class="text-xs font-semibold text-slate-400 mb-1">${sender}</p>
+          <div class="leading-relaxed">${text}</div>
+        </div>
+      `;
+      messages.scrollTop = messages.scrollHeight;
+    }
+
+    async function sendChatMessage() {
+      const input = document.getElementById('chatInput');
+      const userText = input.value.trim();
+      if (!userText) return;
+
+      if (GEMINI_API_KEY === 'YOUR_GEMINI_API_KEY') {
+        alert('コード内の GEMINI_API_KEY にご自身のGemini APIキーを設定してください。');
+        return;
+      }
+
+      appendChatMessage('あなた', userText, true);
       input.value = '';
 
-      setTimeout(() => {
-        messages.innerHTML += `<div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm max-w-[85%]" style="cursor:none;">「${text}」ですね。ドライブ内のファイルから該当しそうなものを検索中です…</div>`;
-        messages.scrollTop = messages.scrollHeight;
-      }, 500);
+      if (allFiles.length === 0) {
+        appendChatMessage('AIアシスタント', 'まだGoogleドライブのファイルが読み込まれていません。先にログインを完了させてください。', false);
+        return;
+      }
+
+      // 読み込んだファイル一覧をテキストのリストに変換してGeminiに渡す
+      const fileSummaryList = allFiles.map((f, i) => 
+        `[${i+1}] 名前: ${f.name} | 説明/タグ: ${f.description || 'なし'} | リンク: ${f.webViewLink}`
+      ).join('\n');
+
+      const prompt = `あなたはユーザーのGoogleドライブから目的のファイルを探し出す優秀なAIアシスタントです。
+以下のユーザーの質問と、ユーザーのドライブ内にあるファイル一覧を基に、該当しそうなファイルを1つまたは複数選んで、親切に回答してください。
+回答には必ず該当するファイルのリンク（[ファイル名を開く](URL) の形式など、クリックして開けるように）を含めてください。
+
+【ユーザーの質問】
+${userText}
+
+【ドライブ内のファイル一覧】
+${fileSummaryList}`;
+
+      // ローディング表示
+      const loadingId = 'loading-' + Date.now();
+      const messages = document.getElementById('chatMessages');
+      messages.innerHTML += `
+        <div id="${loadingId}" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm max-w-[90%] text-slate-400" style="cursor:none;">
+          AIがドライブ内を捜索中...
+        </div>
+      `;
+      messages.scrollTop = messages.scrollHeight;
+
+      try {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+          method: 'post',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }]
+          })
+        });
+
+        const data = await response.json();
+        document.getElementById(loadingId).remove();
+
+        if (data.candidates && data.candidates[0].content) {
+          let aiReply = data.candidates[0].content.parts[0].text;
+          // MarkdownのリンクをHTMLのリンクに変換してクリックしやすくする
+          aiReply = aiReply.replace(/\[([^\]]+)\]\((https:\/\/[^\)]+)\)/g, '<a href="$2" target="_blank" class="text-indigo-600 underline font-medium hover:text-indigo-800">$1 ↗</a>');
+          appendChatMessage('AIアシスタント', aiReply, false);
+        } else {
+          appendChatMessage('AIアシスタント', 'すみません、うまく回答を生成できませんでした。もう一度試してみてください。', false);
+        }
+      } catch (err) {
+        document.getElementById(loadingId).remove();
+        console.error(err);
+        appendChatMessage('AIアシスタント', 'API通信エラーが発生しました。', false);
+      }
     }
   </script>
 </body>
