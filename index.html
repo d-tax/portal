@@ -125,17 +125,24 @@
   </header>
 
   <!-- メインコンテンツ -->
-  <main class="flex-1 max-w-5xl w-full mx-auto px-4 py-8">
-    <!-- ログイン前案内 -->
-    <div id="welcomeView" class="text-center py-20">
-      <h2 class="text-3xl font-bold mb-4">Googleドライブのファイルを知的に検索</h2>
-      <p class="text-slate-500 mb-8 max-w-lg mx-auto">「Googleログイン」を行って権限を許可すると、ご自身のドライブ内のファイルを一覧・フィルターしながら、AIと対話して探し出せるようになります。</p>
-      <button onclick="handleAuthClick()" class="bg-gradient-to-r from-pink-500 to-indigo-600 text-white px-8 py-3 rounded-full font-medium shadow-lg hover:opacity-90 transition">
-        ドライブ連携をはじめる
-      </button>
+  <main class="flex-1 max-w-5xl w-full mx-auto px-4 py-12 flex flex-col justify-center">
+    
+    <!-- Gemini風ファーストビュー（ログイン前 / 初期画面） -->
+    <div id="welcomeView" class="text-center max-w-xl mx-auto py-12 w-full">
+      <h2 class="text-4xl font-bold tracking-tight text-slate-900 mb-8">探し物は何ですか？</h2>
+      
+      <!-- メッセージ入力バー（未ログイン時はクリックでGoogleログインを促す） -->
+      <div class="relative shadow-lg rounded-full border border-slate-200 bg-white flex items-center px-6 py-4 transition hover:shadow-xl">
+        <span class="text-xl mr-3">✨</span>
+        <input type="text" id="initialSearchInput" placeholder="ファイル名や内容についてAIに聞いてみる..." class="w-full bg-transparent focus:outline-none text-slate-700 text-base" onclick="handleInitialInputClick()">
+        <button onclick="handleInitialInputClick()" class="ml-2 bg-indigo-600 text-white p-2.5 rounded-full hover:bg-indigo-700 transition shrink-0">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+        </button>
+      </div>
+      <p class="text-xs text-slate-400 mt-4">※ 初回は「Googleログイン」によるドライブ連携が必要です</p>
     </div>
 
-    <!-- ログイン後：フィルター機能付きファイル一覧ビュー -->
+    <!-- ログイン後：フィルター機能付きファイル一覧ビュー ＆ 巡回画面 -->
     <div id="portalView" class="hidden space-y-6">
       <!-- 検索・フィルターバー -->
       <div class="relative max-w-2xl mx-auto">
@@ -162,7 +169,7 @@
       </div>
       <div id="chatMessages" class="flex-1 p-4 overflow-y-auto space-y-3 text-sm bg-slate-50">
         <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm max-w-[90%]">
-          こんにちは！Googleログインしてドライブを読み込むと、このチャットを通じて記憶を頼りにファイルをAIが探し出せるようになります。何でも聞いてください！
+          こんにちは！「探し物はなんですか？」右下のチャットや画面中央から、何でも気軽に聞いてくださいね！
         </div>
       </div>
       <div class="p-3 bg-white border-t border-slate-200 flex gap-2">
@@ -178,7 +185,7 @@
   <script>
     // --- 設定項目 ---
     const CLIENT_ID = '554521661384-kpp41s620jutab56eu2qi0b7bcbrfgl6.apps.googleusercontent.com'; // Google OAuth クライアントID
-    const GEMINI_API_KEY = 'AQ.Ab8RN6JZMu5ZQa5PxTDq-cE3l64OZhx2-lptnkCD_4uxXvfYLw'; // ★ ご自身のGemini APIキーを設定してください
+    const GEMINI_API_KEY = 'YOUR_GEMINI_API_KEY'; // ★ ご自身のGemini APIキーを設定してください
     const SCOPES = 'https://www.googleapis.com/auth/drive.readonly';
 
     let tokenClient;
@@ -234,6 +241,13 @@
       tokenClient.requestAccessToken({ prompt: 'consent' });
     }
 
+    // 未ログイン状態で初期入力欄をクリック・入力されたらログインを促す
+    function handleInitialInputClick() {
+      if (!accessToken) {
+        handleAuthClick();
+      }
+    }
+
     function onLoginSuccess() {
       document.getElementById('welcomeView').classList.add('hidden');
       document.getElementById('portalView').classList.remove('hidden');
@@ -262,7 +276,7 @@
       toggleMenu();
     }
 
-    // Googleドライブからファイルを巡回取得（descriptionも含める）
+    // Googleドライブからファイルを巡回取得
     async function fetchDriveFiles() {
       if (!accessToken) return;
       try {
@@ -275,7 +289,7 @@
         document.getElementById('fileCountBadge').innerText = `${allFiles.length}件`;
         renderFiles(allFiles);
 
-        appendChatMessage('AIアシスタント', `ドライブから ${allFiles.length} 件のファイルを読み込みました！右下のチャットで「去年の資料どこだっけ？」など気軽に聞いてくださいね。`, false);
+        appendChatMessage('AIアシスタント', `ドライブから ${allFiles.length} 件のファイルを読み込みました！右下のチャットや上のフィルターから自由に探し物を見つけてくださいね。`, false);
       } catch (err) {
         console.error('ファイル取得エラー:', err);
       }
@@ -364,7 +378,7 @@
       input.value = '';
 
       if (allFiles.length === 0) {
-        appendChatMessage('AIアシスタント', 'まだGoogleドライブのファイルが読み込まれていません。先にログインを完了させてください。', false);
+        appendChatMessage('AIアシスタント', 'まだGoogleドライブのファイルが読み込まれていません。先に画面上部からログインを完了させてください。', false);
         return;
       }
 
@@ -418,4 +432,4 @@ ${fileSummaryList}`;
     }
   </script>
 </body>
-</html>
+余白</html>
