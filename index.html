@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Drive Search Portal</title>
+  <title>AI Drive Search Portal - D-Tax</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Google Identity Services (Googleログイン用) -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -102,17 +102,41 @@
   <div class="cursor-glow" id="cursorGlow"></div>
 
   <!-- ヘッダー -->
-  <header class="bg-white border-b border-slate-200 sticky top-0 z-40 px-6 py-4 flex items-center justify-between shadow-sm">
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-40 px-6 py-3 flex items-center justify-between shadow-sm">
     <div class="flex items-center space-x-3">
-      <div class="w-9 h-9 bg-gradient-to-tr from-pink-500 to-indigo-500 rounded-xl flex items-center justify-center text-white font-bold shadow-md">
-        AI
-      </div>
-      <h1 class="text-xl font-semibold tracking-tight text-slate-900">Drive Search Portal</h1>
+      <!-- アップロードされたD-Taxロゴに置き換え -->
+      <img src="image/dtaxlogo.png" alt="D-Tax Logo" class="h-9 w-auto object-contain">
+      <span class="text-sm font-semibold tracking-tight text-slate-500 border-l pl-3 border-slate-300">Drive Search Portal</span>
     </div>
-    <div id="auth-section">
-      <button id="loginBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-full font-medium shadow transition transform active:scale-95">
-        Googleログイン
-      </button>
+
+    <div class="flex items-center space-x-4">
+      <div id="auth-section">
+        <button id="loginBtn" onclick="handleAuthClick()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-full font-medium shadow transition transform active:scale-95 text-sm">
+          Googleログイン
+        </button>
+      </div>
+
+      <!-- ハンバーガーメニューボタン（ログイン後または常時表示） -->
+      <div class="relative">
+        <button onclick="toggleMenu()" class="w-10 h-10 bg-slate-100 hover:bg-slate-200 rounded-xl flex flex-col items-center justify-center space-y-1 transition">
+          <span class="w-5 h-0.5 bg-slate-700 rounded-full"></span>
+          <span class="w-5 h-0.5 bg-slate-700 rounded-full"></span>
+          <span class="w-5 h-0.5 bg-slate-700 rounded-full"></span>
+        </button>
+
+        <!-- ドロップダウンメニュー -->
+        <div id="dropdownMenu" class="hidden absolute right-0 mt-2 w-56 bg-white border border-slate-200 rounded-2xl shadow-xl py-2 z-50">
+          <div class="px-4 py-2 border-b border-slate-100">
+            <p class="text-xs font-medium text-slate-400">メニュー</p>
+          </div>
+          <a href="https://d-tax.github.io/dtax_freee/" target="_blank" class="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2 transition">
+            <span>🔗</span> D-tax freeeポータル
+          </a>
+          <div id="menuAuthAction" class="border-t border-slate-100 pt-1 mt-1">
+            <!-- ログアウトボタンはログイン時に動的に表示されます -->
+          </div>
+        </div>
+      </div>
     </div>
   </header>
 
@@ -198,10 +222,23 @@
       setTimeout(() => ripple.remove(), 800);
     });
 
+    // --- ハンバーガーメニューの開閉 ---
+    function toggleMenu() {
+      const menu = document.getElementById('dropdownMenu');
+      menu.classList.toggle('hidden');
+    }
+
+    // 画面外クリックでメニューを閉じる
+    window.addEventListener('click', (e) => {
+      const menu = document.getElementById('dropdownMenu');
+      const btn = e.target.closest('button');
+      if (!menu.contains(e.target) && (!btn || !btn.onclick?.toString().includes('toggleMenu'))) {
+        menu.classList.add('hidden');
+      }
+    });
+
     // --- Google API 連携関連 ---
-    // ※Google Cloud ConsoleでOAuthクライアントIDを発行し、ここに設定してください
-    const CLIENT_ID = '554521661384-kpp41s620jutab56eu2qi0b7bcbrfgl6.apps.googleusercontent.com';
-    const API_KEY = 'YOUR_GOOGLE_API_KEY'; // 必要に応じて
+    const CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com'; // ご自身のクライアントIDを設定してください
     const SCOPES = 'https://www.googleapis.com/auth/drive.readonly';
 
     let tokenClient;
@@ -209,12 +246,6 @@
     let allFiles = [];
 
     window.onload = function () {
-      google.accounts.id.initialize({
-        client_id: CLIENT_ID,
-        callback: handleCredentialResponse
-      });
-      
-      // GIS (Google Identity Services) Token Client の初期化
       tokenClient = google.accounts.oauth2.initTokenClient({
         client_id: CLIENT_ID,
         scope: SCOPES,
@@ -237,15 +268,35 @@
       tokenClient.requestAccessToken({ prompt: 'consent' });
     }
 
-    function handleCredentialResponse(response) {
-      // ログイン成功時の処理
-    }
-
     function onLoginSuccess() {
       document.getElementById('welcomeView').classList.add('hidden');
       document.getElementById('portalView').classList.remove('hidden');
-      document.getElementById('auth-section').innerHTML = '<span class="text-sm font-medium text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full">● 連携済み</span>';
+      document.getElementById('auth-section').innerHTML = '<span class="text-xs font-medium text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-200">● 連携済み</span>';
+      
+      // メニュー内にログアウトボタンを追加
+      document.getElementById('menuAuthAction').innerHTML = `
+        <button onclick="handleLogout()" class="w-full text-left px-4 py-2.5 text-sm text-rose-600 hover:bg-rose-50 flex items-center gap-2 transition">
+          <span>🚪</span> Googleアカウント ログアウト
+        </button>
+      `;
+
       fetchDriveFiles();
+    }
+
+    // ログアウト処理
+    function handleLogout() {
+      accessToken = null;
+      allFiles = [];
+      // 画面の状態をリセット
+      document.getElementById('portalView').classList.add('hidden');
+      document.getElementById('welcomeView').classList.remove('hidden');
+      document.getElementById('auth-section').innerHTML = `
+        <button id="loginBtn" onclick="handleAuthClick()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-full font-medium shadow transition transform active:scale-95 text-sm">
+          Googleログイン
+        </button>
+      `;
+      document.getElementById('menuAuthAction').innerHTML = '';
+      toggleMenu();
     }
 
     // Googleドライブのファイルをフェッチする
@@ -305,11 +356,11 @@
       if (!text) return;
 
       const messages = document.getElementById('chatMessages');
-      messages.innerHTML += `<div class="bg-indigo-50 text-indigo-900 p-3 rounded-xl border border-indigo-100 ml-auto max-w-[85%]">${text}</div>`;
+      messages.innerHTML += `<div class="bg-indigo-50 text-indigo-900 p-3 rounded-xl border border-indigo-100 ml-auto max-w-[85%]" style="cursor:none;">${text}</div>`;
       input.value = '';
 
       setTimeout(() => {
-        messages.innerHTML += `<div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm max-w-[85%]">「${text}」ですね。ドライブ内のファイルから該当しそうなものを検索中です…（※AI要約機能やGemini API連携をここに拡張できます）</div>`;
+        messages.innerHTML += `<div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm max-w-[85%]" style="cursor:none;">「${text}」ですね。ドライブ内のファイルから該当しそうなものを検索中です…</div>`;
         messages.scrollTop = messages.scrollHeight;
       }, 500);
     }
