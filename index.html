@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Drive Search Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        google: {
+                            blue: '#1a73e8',
+                            hover: '#174ea6',
+                            gray: '#f1f3f4',
+                            text: '#202124',
+                            light: '#5f6368'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { 
+            background-color: #f8f9fa; 
+            color: #202124; 
+            cursor: none; /* デフォルトのカーソルを非表示にしてカスタムカーソルを適用 */
+        }
+        
+        /* リンクやボタンなどもカスタムカーソルに合わせるためcursor: noneを指定 */
+        a, button, input {
+            cursor: none;
+        }
+
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .transition-all-ease { transition: all 0.3s ease; }
+
+        /* カスタムカーソル（◎の形） */
+        .cursor-dot {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 24px;
+            height: 24px;
+            border: 2px solid #1a73e8;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.3s, transform 0.1s ease-out;
+        }
+        .cursor-dot::after {
+            content: "";
+            width: 6px;
+            height: 6px;
+            background-color: #1a73e8;
+            border-radius: 50%;
+        }
+
+        /* カーソルに遅れて追従する虹色のブラー */
+        .cursor-glow {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 150px;
+            height: 150px;
+            background: radial-gradient(circle, rgba(255, 105, 180, 0.4), rgba(135, 206, 250, 0.4), transparent 70%);
+            border-radius: 50%;
+            filter: blur(30px);
+            pointer-events: none;
+            z-index: 9998;
+            transform: translate(-50%, -50%);
+            opacity: 0;
+            transition: left 0.4s cubic-bezier(0.1, 0.7, 0.3, 1), top 0.4s cubic-bezier(0.1, 0.7, 0.3, 1), opacity 0.3s;
+        }
+
+        /* クリック時に広がるリッチな波紋エフェクト */
+        .ripple-wave {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 150px;
+            height: 150px;
+            background: radial-gradient(
+                circle,
+                rgba(255, 182, 193, 0.65) 0%,
+                rgba(251, 194, 235, 0.6) 25%,
+                rgba(161, 140, 209, 0.55) 50%,
+                rgba(143, 211, 244, 0.55) 70%,
+                transparent 85%
+            );
+            border-radius: 50%;
+            filter: blur(25px);
+            pointer-events: none;
+            z-index: 9997;
+            transform: translate(-50%, -50%);
+            animation: waveAnimation 0.8s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+        }
+
+        @keyframes waveAnimation {
+            0% {
+                width: 50px;
+                height: 50px;
+                opacity: 0.95;
+            }
+            100% {
+                width: 350px;
+                height: 350px;
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col font-sans">
+
+    <!-- カスタムカーソル要素 -->
+    <div class="cursor-dot" id="cursorDot"></div>
+    <div class="cursor-glow" id="cursorGlow"></div>
+
+    <!-- Header / Search Area -->
+    <header class="bg-white shadow-sm sticky top-0 z-10 border-b border-gray-200">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="flex items-center justify-center mb-6 gap-3">
+                <i class="fa-brands fa-google-drive text-3xl text-google-blue"></i>
+                <h1 class="text-2xl font-semibold text-google-text">AI Drive Portal</h1>
+            </div>
+            
+            <!-- Search Bar -->
+            <div class="max-w-3xl mx-auto relative group">
+                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <i class="fa-solid fa-magnifying-glass text-gray-400 group-focus-within:text-google-blue transition-colors"></i>
+                </div>
+                <input type="text" id="searchInput" class="block w-full pl-11 pr-24 py-4 rounded-full border border-gray-300 bg-google-gray focus:bg-white focus:ring-2 focus:ring-google-blue focus:border-transparent transition-all-ease shadow-sm text-lg outline-none" placeholder="Search by meaning, filename, or ask AI...">
+                <button class="absolute inset-y-1 right-1 px-6 bg-google-blue hover:bg-google-hover text-white rounded-full font-medium transition-colors shadow-sm">
+                    Search
+                </button>
+            </div>
+
+            <!-- Tags -->
+            <div class="max-w-3xl mx-auto mt-4 flex flex-wrap justify-center gap-2" id="tagContainer">
+                <button class="tag-btn px-4 py-1.5 rounded-full border border-gray-300 text-sm font-medium text-google-light hover:bg-gray-100 transition-colors bg-white shadow-sm" data-tag="all">All</button>
+                <button class="tag-btn px-4 py-1.5 rounded-full border border-gray-300 text-sm font-medium text-google-light hover:bg-gray-100 transition-colors bg-white shadow-sm" data-tag="#3PL">#3PL</button>
+                <button class="tag-btn px-4 py-1.5 rounded-full border border-gray-300 text-sm font-medium text-google-light hover:bg-gray-100 transition-colors bg-white shadow-sm" data-tag="#大阪ポップアップ">#大阪ポップアップ</button>
+                <button class="tag-btn px-4 py-1.5 rounded-full border border-gray-300 text-sm font-medium text-google-light hover:bg-gray-100 transition-colors bg-white shadow-sm" data-tag="#見積書">#見積書</button>
+                <button class="tag-btn px-4 py-1.5 rounded-full border border-gray-300 text-sm font-medium text-google-light hover:bg-gray-100 transition-colors bg-white shadow-sm" data-tag="#マニュアル">#マニュアル</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content: File Grid -->
+    <main class="flex-grow max-w-6xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+        <div class="flex justify-between items-end mb-4">
+            <h2 class="text-lg font-medium text-google-light" id="resultCount">Suggested Files</h2>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="fileGrid">
+            <!-- Cards will be injected by JavaScript -->
+        </div>
+    </main>
+
+    <!-- Floating AI Chat Widget -->
+    <div id="chatWidgetContainer" class="fixed bottom-6 right-6 z-50 flex flex-col items-end">
+        <!-- Chat Window -->
+        <div id="chatWindow" class="bg-white rounded-2xl shadow-2xl border border-gray-200 w-80 sm:w-96 mb-4 overflow-hidden transform scale-0 origin-bottom-right transition-transform duration-300 ease-out flex flex-col" style="height: 480px;">
+            <!-- Chat Header -->
+            <div class="bg-google-blue text-white px-4 py-3 flex justify-between items-center shadow-md z-10">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-robot text-lg"></i>
+                    <span class="font-semibold">Drive AI Assistant</span>
+                </div>
+                <button id="closeChatBtn" class="text-white hover:text-gray-200 focus:outline-none">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            
+            <!-- Chat Messages -->
+            <div class="flex-grow p-4 overflow-y-auto bg-gray-50 flex flex-col gap-4 hide-scrollbar" id="chatMessages">
+                <!-- AI Message -->
+                <div class="flex gap-2">
+                    <div class="w-8 h-8 rounded-full bg-google-blue flex items-center justify-center flex-shrink-0 text-white">
+                        <i class="fa-solid fa-robot text-xs"></i>
+                    </div>
+                    <div class="bg-white p-3 rounded-2xl rounded-tl-none shadow-sm border border-gray-100 text-sm text-gray-800 max-w-[85%]">
+                        こんにちは！探しているファイルが見つかりませんか？内容や時期で質問してみてください。
+                    </div>
+                </div>
+                
+                <!-- User Message -->
+                <div class="flex gap-2 flex-row-reverse">
+                    <div class="bg-google-blue text-white p-3 rounded-2xl rounded-tr-none shadow-sm text-sm max-w-[85%]">
+                        そういえば先月の大阪ポップアップで使った、先方の見積書どこだっけ？
+                    </div>
+                </div>
+
+                <!-- AI Message with Result -->
+                <div class="flex gap-2">
+                    <div class="w-8 h-8 rounded-full bg-google-blue flex items-center justify-center flex-shrink-0 text-white">
+                        <i class="fa-solid fa-robot text-xs"></i>
+                    </div>
+                    <div class="bg-white p-3 rounded-2xl rounded-tl-none shadow-sm border border-gray-100 text-sm text-gray-800 max-w-[85%]">
+                        こちらですね！見つかりました。<br>
+                        <div class="mt-2 p-2 border border-blue-100 bg-blue-50 rounded-lg">
+                            <div class="font-medium text-google-blue flex items-center gap-1">
+                                <i class="fa-solid fa-file-excel"></i> 2026年9月 大阪ポップアップストア見積書
+                            </div>
+                            <div class="text-xs text-gray-500 mt-1 truncate">EST_osk_pop_2026_09_rev.xlsx</div>
+                            <button class="mt-2 text-xs bg-white border border-gray-300 px-3 py-1 rounded-full hover:bg-gray-50 transition-colors w-full">開く</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Chat Input -->
+            <div class="p-3 border-t border-gray-200 bg-white">
+                <div class="relative">
+                    <input type="text" class="w-full bg-google-gray border border-gray-300 rounded-full pl-4 pr-10 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-google-blue focus:bg-white transition-colors" placeholder="Ask AI to find a file...">
+                    <button class="absolute right-2 top-1/2 transform -translate-y-1/2 text-google-blue hover:text-google-hover">
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Toggle Button -->
+        <button id="toggleChatBtn" class="w-14 h-14 bg-google-blue hover:bg-google-hover text-white rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-105 active:scale-95">
+            <i class="fa-solid fa-sparkles text-xl"></i>
+        </button>
+    </div>
+
+    <script>
+        // カスタムカーソルと波紋エフェクトのロジック
+        const cursorDot = document.getElementById('cursorDot');
+        const cursorGlow = document.getElementById('cursorGlow');
+        
+        let mouseX = 0;
+        let mouseY = 0;
+        let glowX = 0;
+        let glowY = 0;
+
+        window.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+            
+            cursorDot.style.opacity = '1';
+            cursorGlow.style.opacity = '1';
+
+            cursorDot.style.left = `${mouseX}px`;
+            cursorDot.style.top = `${mouseY}px`;
+        });
+
+        // 虹色ブラーの滑らかな遅延追従アニメーション
+        function animateGlow() {
+            glowX += (mouseX - glowX) * 0.15;
+            glowY += (mouseY - glowY) * 0.15;
+            
+            cursorGlow.style.left = `${glowX}px`;
+            cursorGlow.style.top = `${glowY}px`;
+            
+            requestAnimationFrame(animateGlow);
+        }
+        animateGlow();
+
+        // クリック時に広がる多色波紋エフェクト
+        window.addEventListener('click', (e) => {
+            const ripple = document.createElement('div');
+            ripple.className = 'ripple-wave';
+            ripple.style.left = `${e.clientX}px`;
+            ripple.style.top = `${e.clientY}px`;
+            document.body.appendChild(ripple);
+
+            setTimeout(() => {
+                ripple.remove();
+            }, 800);
+        });
+
+        // Dummy File Data
+        const files = [
+            {
+                originalName: '202512_3PL_AGR_final_v2_ok.pdf',
+                aiTitle: '2025年12月 3PL基本契約書（最終版）',
+                summary: '3PL業者との基本契約書。修正v2を反映済みの確定版。',
+                type: 'pdf',
+                icon: 'fa-file-pdf',
+                color: 'text-red-500',
+                tags: ['#3PL']
+            },
+            {
+                originalName: 'EST_osk_pop_2026_09_rev.xlsx',
+                aiTitle: '2026年9月 大阪ポップアップ見積書',
+                summary: '大阪梅田でのポップアップストア設営に関する修正版見積もり。',
+                type: 'excel',
+                icon: 'fa-file-excel',
+                color: 'text-green-600',
+                tags: ['#大阪ポップアップ', '#見積書']
+            },
+            {
+                originalName: 'manual_ope_new_v4.docx',
+                aiTitle: '新規オペレーション業務マニュアル v4',
+                summary: '倉庫内の新しいピッキングフローをまとめた手順書。',
+                type: 'word',
+                icon: 'fa-file-word',
+                color: 'text-blue-500',
+                tags: ['#マニュアル']
+            },
+            {
+                originalName: 'INV_202608_ABC_corp.pdf',
+                aiTitle: '2026年8月 ABC株式会社 請求書',
+                summary: '8月分の配送代行費用の請求書。',
+                type: 'pdf',
+                icon: 'fa-file-pdf',
+                color: 'text-red-500',
+                tags: ['#3PL', '#請求書']
+            },
+            {
+                originalName: 'osk_pop_shift_final.xlsx',
+                aiTitle: '大阪ポップアップ スタッフシフト表',
+                summary: '期間中のアルバイト・社員の配置スケジュール。',
+                type: 'excel',
+                icon: 'fa-file-excel',
+                color: 'text-green-600',
+                tags: ['#大阪ポップアップ']
+            },
+            {
+                originalName: 'guide_line_2025.pdf',
+                aiTitle: '2025年度 業務ガイドライン',
+                summary: '全社向けのコンプライアンス・業務基本方針。',
+                type: 'pdf',
+                icon: 'fa-file-pdf',
+                color: 'text-red-500',
+                tags: ['#マニュアル']
+            }
+        ];
+
+        const fileGrid = document.getElementById('fileGrid');
+        const tagContainer = document.getElementById('tagContainer');
+        const resultCount = document.getElementById('resultCount');
+        const searchInput = document.getElementById('searchInput');
+
+        // Function to render file cards
+        function renderFiles(filesToRender) {
+            fileGrid.innerHTML = '';
+            
+            if (filesToRender.length === 0) {
+                fileGrid.innerHTML = '<div class="col-span-full text-center py-10 text-gray-500">No files found matching your criteria.</div>';
+                resultCount.textContent = '0 files';
+                return;
+            }
+
+            resultCount.textContent = `Showing ${filesToRender.length} files`;
+
+            filesToRender.forEach(file => {
+                const tagHtml = file.tags.map(tag => `<span class="inline-block bg-blue-50 text-google-blue text-xs px-2 py-1 rounded-md mr-1 mb-1 font-medium">${tag}</span>`).join('');
+                
+                const card = `
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200 overflow-hidden flex flex-col h-full group">
+                        <div class="p-5 flex-grow">
+                            <div class="flex items-start gap-3 mb-3">
+                                <div class="mt-1 ${file.color}">
+                                    <i class="fa-solid ${file.icon} text-2xl"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold text-gray-900 group-hover:text-google-blue transition-colors leading-tight line-clamp-2">${file.aiTitle}</h3>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <p class="text-xs font-mono text-gray-400 bg-gray-50 p-1.5 rounded border border-gray-100 truncate" title="Original filename">
+                                    <i class="fa-solid fa-link text-[10px] mr-1"></i>${file.originalName}
+                                </p>
+                            </div>
+                            
+                            <p class="text-sm text-gray-600 line-clamp-2 mb-3">
+                                ${file.summary}
+                            </p>
+                            
+                            <div class="flex flex-wrap mt-auto">
+                                ${tagHtml}
+                            </div>
+                        </div>
+                        <div class="bg-gray-50 px-5 py-3 border-t border-gray-100 flex justify-end">
+                            <button class="text-sm font-medium text-google-blue hover:text-google-hover hover:bg-blue-50 px-4 py-1.5 rounded transition-colors flex items-center gap-2">
+                                Open <i class="fa-solid fa-arrow-up-right-from-square text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                fileGrid.innerHTML += card;
+            });
+        }
+
+        // Initial render
+        renderFiles(files);
+
+        // Tag filtering logic
+        const tagBtns = document.querySelectorAll('.tag-btn');
+        let activeTag = 'all';
+
+        tagBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                tagBtns.forEach(b => {
+                    b.classList.remove('bg-blue-50', 'text-google-blue', 'border-google-blue');
+                    b.classList.add('bg-white', 'text-google-light', 'border-gray-300');
+                });
+                e.target.classList.remove('bg-white', 'text-google-light', 'border-gray-300');
+                e.target.classList.add('bg-blue-50', 'text-google-blue', 'border-google-blue');
+
+                activeTag = e.target.dataset.tag;
+                filterFiles();
+            });
+        });
+
+        // Search Input logic
+        searchInput.addEventListener('input', filterFiles);
+
+        function filterFiles() {
+            const searchTerm = searchInput.value.toLowerCase();
+            
+            const filtered = files.filter(file => {
+                const matchesTag = activeTag === 'all' || file.tags.includes(activeTag);
+                const matchesSearch = file.aiTitle.toLowerCase().includes(searchTerm) || 
+                                      file.originalName.toLowerCase().includes(searchTerm) || 
+                                      file.summary.toLowerCase().includes(searchTerm);
+                return matchesTag && matchesSearch;
+            });
+
+            renderFiles(filtered);
+        }
+
+        // Chat Widget Toggle Logic
+        const chatWindow = document.getElementById('chatWindow');
+        const toggleChatBtn = document.getElementById('toggleChatBtn');
+        const closeChatBtn = document.getElementById('closeChatBtn');
+        let isChatOpen = false;
+
+        function toggleChat() {
+            isChatOpen = !isChatOpen;
+            if (isChatOpen) {
+                chatWindow.classList.remove('scale-0');
+                chatWindow.classList.add('scale-100');
+                toggleChatBtn.innerHTML = '<i class="fa-solid fa-chevron-down text-xl"></i>';
+            } else {
+                chatWindow.classList.remove('scale-100');
+                chatWindow.classList.add('scale-0');
+                toggleChatBtn.innerHTML = '<i class="fa-solid fa-sparkles text-xl"></i>';
+            }
+        }
+
+        toggleChatBtn.addEventListener('click', toggleChat);
+        closeChatBtn.addEventListener('click', toggleChat);
+
+        // Trigger initial active state on 'All' tag
+        document.querySelector('[data-tag="all"]').click();
+    </script>
+</body>
+</html>
