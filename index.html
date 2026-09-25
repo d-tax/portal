@@ -34,7 +34,7 @@
       border-radius: 50%;
     }
 
-    /* カーソルに遅れて追従する虹色のブラー（z-index: 1 にしてメッセージの後ろに配置） */
+    /* カーソルに遅れて追従する虹色のブラー */
     .cursor-glow {
       position: fixed;
       top: 0;
@@ -51,7 +51,7 @@
       transition: left 0.5s ease-out, top 0.5s ease-out, width 0.3s, height 0.3s, opacity 0.3s;
     }
 
-    /* クリック時に広がるリッチな波紋エフェクト */
+    /* クリック時に広がる波紋エフェクト */
     .ripple-wave {
       position: fixed;
       top: 0;
@@ -89,7 +89,7 @@
   <div class="cursor-dot" id="cursorDot"></div>
   <div class="cursor-glow" id="cursorGlow"></div>
 
-  <!-- ヘッダー (z-index 40 で前面に配置) -->
+  <!-- ヘッダー -->
   <header class="bg-white border-b border-slate-200 sticky top-0 z-40 px-6 py-3 flex items-center justify-between shadow-sm relative">
     <div class="flex items-center space-x-3">
       <img src="image/dtaxlogo.png" alt="D-Tax Logo" class="h-9 w-auto object-contain">
@@ -122,7 +122,7 @@
     </div>
   </header>
 
-  <!-- メインコンテンツ (z-index 10 でブラーより前面に配置) -->
+  <!-- メインコンテンツ -->
   <main class="flex-1 max-w-3xl w-full mx-auto px-4 py-8 flex flex-col justify-center items-center relative z-10">
     
     <!-- 1. ログイン前：中央にログインボタン配置 -->
@@ -137,21 +137,33 @@
       </div>
     </div>
 
-    <!-- 2. ログイン後：チャット画面 ＆ 中央の「探し物は何ですか？」バー -->
+    <!-- 2. 初回ログイン後のドライブ巡回ローディング画面 -->
+    <div id="loadingView" class="hidden text-center py-16 w-full flex flex-col items-center">
+      <div class="bg-white border border-slate-200 p-10 rounded-3xl shadow-lg max-w-md w-full text-center space-y-4">
+        <div class="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+        <h3 class="text-lg font-bold text-slate-900">Googleドライブを巡回中...</h3>
+        <p id="loadingStatusDetail" class="text-xs text-slate-500">ファイルとフォルダの情報を取得しています。完了までしばらくお待ちください。</p>
+      </div>
+    </div>
+
+    <!-- 3. ログイン後＆巡回完了：チャット画面 -->
     <div id="chatPortalView" class="hidden flex flex-col h-[78vh] bg-white border border-slate-200 rounded-3xl shadow-sm overflow-hidden w-full">
       <!-- ステータスヘッダー -->
       <div class="bg-slate-50 border-b border-slate-100 px-6 py-3 flex items-center justify-between text-xs text-slate-500">
         <span id="driveStatusText" class="flex items-center gap-2 font-medium text-slate-700">
-          <span class="w-2 h-2 rounded-full bg-emerald-500"></span> ドライブ巡回中...
+          <span class="w-2 h-2 rounded-full bg-emerald-500"></span> 準備完了
         </span>
         <button onclick="fetchDriveItems()" class="hover:text-indigo-600 underline transition">再スキャン</button>
       </div>
 
       <!-- メッセージ履歴エリア -->
       <div id="chatMessages" class="flex-1 p-6 overflow-y-auto space-y-4 text-sm bg-slate-50/50">
-        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm max-w-[85%] relative z-10">
-          <p class="text-xs font-semibold text-indigo-600 mb-1">AIドライブアシスタント</p>
-          ログインありがとうございます！ドライブのファイルとフォルダを読み込みました。「探し物は何ですか？」のバーから、いつでも気軽に話しかけてくださいね。
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm max-w-[85%] relative z-10 flex items-start gap-3">
+          <img src="image/folder.png" alt="" class="w-5 h-5 object-contain mt-0.5 shrink-0">
+          <div>
+            <p class="text-xs font-semibold text-indigo-600 mb-1">AIドライブアシスタント</p>
+            ログインありがとうございます！ドライブの巡回が完了しました。「探し物は何ですか？」のバーから、いつでも気軽に話しかけてくださいね。
+          </div>
         </div>
       </div>
 
@@ -169,7 +181,7 @@
 
   </main>
 
-  <!-- 右下の「？」ボタン（判定基準・検索仕組みの解説用） -->
+  <!-- 右下の「？」ボタン -->
   <button onclick="openHelpModal()" class="fixed bottom-6 right-6 w-12 h-12 bg-white hover:bg-slate-100 border border-slate-200 rounded-full shadow-lg flex items-center justify-center text-slate-600 font-bold text-lg z-50 transition transform hover:scale-105 active:scale-95" title="検索・判定基準について">
     ？
   </button>
@@ -182,9 +194,9 @@
         <button onclick="closeHelpModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 transition">✕</button>
       </div>
       <div class="text-xs text-slate-600 space-y-3 leading-relaxed">
-        <p><strong>1. ドライブ巡回とデータ保持</strong><br>Google Drive APIを使用して、あなたのマイドライブ内にある「フォルダ」および「ファイル」の名称、説明欄、更新日時、リンクを安全に取得しています。</p>
-        <p><strong>2. スマートキーワード ＆ 直近2年間の優先絞り込み</strong><br>ファイル数が多いため、質問のキーワード一致度に加え、<strong>ここ2年間（24ヶ月以内）に更新されたファイル</strong>を優先的にスコアリングし、AIへ正確に渡すことでエラーや探し漏れを防ぎます。</p>
-        <p><strong>3. Geminiによる意味理解</strong><br>抽出されたファイルリスト（更新日付き）とあなたの質問をGemini 1.5 Flashに渡し、曖昧な記憶からでも文脈を推論して、ダイレクトに開けるリンク付きで回答を生成しています。</p>
+        <p><strong>1. 初回ドライブ巡回とアイコン連動</strong><br>ログイン時にGoogle Drive APIを使用してマイドライブ内を全件巡回し、結果はフォルダとファイルのアイコン（folder.png / file.png）付きで分かりやすく表示されます。</p>
+        <p><strong>2. スマートキーワード ＆ 直近2年間の優先絞り込み</strong><br>ファイル数が多いため、質問のキーワード一致度に加え、直近2年以内に更新されたファイルを優先的にスコアリングし、AIへ正確に渡します。</p>
+        <p><strong>3. Geminiによる意味理解</strong><br>最新のGemini 3.5 Flashモデルを活用し、曖昧な記憶からでも文脈を推論してダイレクトに開けるアイコン付きリンクで回答します。</p>
       </div>
       <div class="pt-2 text-right">
         <button onclick="closeHelpModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-5 py-2.5 rounded-xl font-medium transition">閉じる</button>
@@ -194,13 +206,13 @@
 
   <script>
     // --- 設定項目 ---
-    const CLIENT_ID = '554521661384-kpp41s620jutab56eu2qi0b7bcbrfgl6.apps.googleusercontent.com'; // Google OAuth クライアントID
-    const GEMINI_API_KEY = 'AQ.Ab8RN6JZMu5ZQa5PxTDq-cE3l64OZhx2-lptnkCD_4uxXvfYLw'; // ★ ご自身のGemini APIキーを設定してください
+    const CLIENT_ID = '554521661384-kpp41s620jutab56eu2qi0b7bcbrfgl6.apps.googleusercontent.com';
+    const GEMINI_API_KEY = 'YOUR_GEMINI_API_KEY'; // ★ ご自身のGemini APIキーを設定してください
     const SCOPES = 'https://www.googleapis.com/auth/drive.readonly';
 
     let tokenClient;
     let accessToken = null;
-    let allDriveItems = []; // ファイルとフォルダの全データ
+    let allDriveItems = [];
 
     // --- 演出関連（カスタムカーソル等） ---
     const cursorDot = document.getElementById('cursorDot');
@@ -261,7 +273,8 @@
 
     function onLoginSuccess() {
       document.getElementById('welcomeView').classList.add('hidden');
-      document.getElementById('chatPortalView').classList.remove('hidden');
+      document.getElementById('loadingView').classList.remove('hidden');
+      
       document.getElementById('auth-section').innerHTML = '<span class="text-xs font-medium text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-200">● 連携済み</span>';
       
       document.getElementById('menuAuthAction').innerHTML = `
@@ -277,18 +290,22 @@
       accessToken = null;
       allDriveItems = [];
       document.getElementById('chatPortalView').classList.add('hidden');
+      document.getElementById('loadingView').classList.add('hidden');
       document.getElementById('welcomeView').classList.remove('hidden');
       document.getElementById('auth-section').innerHTML = '<span class="text-xs text-slate-400">未ログイン</span>';
       document.getElementById('menuAuthAction').innerHTML = '';
       toggleMenu();
     }
 
-    // Googleドライブから「フォルダ」と「ファイル」を全件巡回取得する（ページネーション対応）
+    // Googleドライブから全件巡回取得 ＆ ローディング制御
     async function fetchDriveItems() {
       if (!accessToken) return;
       try {
         let allItems = [];
         let pageToken = null;
+        let pageCount = 1;
+
+        document.getElementById('loadingStatusDetail').innerText = 'ドライブのアイテムをスキャン中...';
         
         do {
           let url = `https://www.googleapis.com/drive/v3/files?pageSize=100&fields=nextPageToken,files(id,name,webViewLink,mimeType,modifiedTime,description)`;
@@ -305,6 +322,7 @@
             allItems = allItems.concat(data.files);
           }
           pageToken = data.nextPageToken;
+          pageCount++;
           
         } while (pageToken);
 
@@ -313,14 +331,18 @@
         const folderCount = allDriveItems.filter(f => f.mimeType === 'application/vnd.google-apps.folder').length;
         const fileCount = allDriveItems.length - folderCount;
         
+        // 巡回完了後、ローディングを隠してチャット画面を表示
+        document.getElementById('loadingView').classList.add('hidden');
+        document.getElementById('chatPortalView').classList.remove('hidden');
+
         document.getElementById('driveStatusText').innerHTML = `
           <span class="w-2 h-2 rounded-full bg-emerald-500"></span> ドライブ巡回完了 (フォルダ: ${folderCount}件 / ファイル: ${fileCount}件)
         `;
       } catch (err) {
         console.error('アイテム取得エラー:', err);
-        document.getElementById('driveStatusText').innerHTML = `
-          <span class="w-2 h-2 rounded-full bg-rose-500"></span> ドライブ取得エラー
-        `;
+        document.getElementById('loadingView').classList.add('hidden');
+        document.getElementById('welcomeView').classList.remove('hidden');
+        alert('ドライブの取得中にエラーが発生しました。コンソールをご確認ください。');
       }
     }
 
@@ -353,31 +375,27 @@
       input.value = '';
 
       if (allDriveItems.length === 0) {
-        appendChatMessage('AIドライブアシスタント', 'まだドライブのデータが読み込まれていません。上の「再スキャン」をクリックするか、ログインし直してください。', false);
+        appendChatMessage('AIドライブアシスタント', 'まだドライブのデータが読み込まれていません。ページを再読み込みするか、ログインし直してください。', false);
         return;
       }
 
-      // 2年前の日付を計算
       const twoYearsAgo = new Date();
       twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
 
-      // 【スマート絞り込み ＋ 直近2年間の優先スコアリング】
+      // キーワード絞り込み ＋ 直近2年間の優先スコアリング
       const queryKeywords = userText.toLowerCase().split(/\s+/);
       const scoredItems = allDriveItems.map(item => {
         let score = 0;
         const name = (item.name || '').toLowerCase();
         const desc = (item.description || '').toLowerCase();
         
-        // キーワード一致ボーナス
         queryKeywords.forEach(kw => {
           if (name.includes(kw)) score += 5;
           if (desc.includes(kw)) score += 2;
         });
         
-        // フォルダには少しボーナス
         if (item.mimeType === 'application/vnd.google-apps.folder') score += 1;
 
-        // 【ここ2年以内に更新されたファイルにボーナスを付与】
         if (item.modifiedTime) {
           const modDate = new Date(item.modifiedTime);
           if (modDate >= twoYearsAgo) {
@@ -388,11 +406,9 @@
         return { item, score };
       });
 
-      // スコアが高い順にソートして上位150件を抽出
       scoredItems.sort((a, b) => b.score - a.score);
       const targetItems = scoredItems.slice(0, 150).map(s => s.item);
 
-      // AIに渡すリストに更新日時（年月日）を含める
       const itemListText = targetItems.map((item, i) => {
         const typeStr = item.mimeType === 'application/vnd.google-apps.folder' ? '【フォルダ】' : '【ファイル】';
         const dateStr = item.modifiedTime ? item.modifiedTime.split('T')[0] : '不明';
@@ -400,25 +416,26 @@
       }).join('\n');
 
       const prompt = `あなたはユーザーのGoogleドライブから目的のものを探し出す優秀なAIアシスタントです。
-以下のユーザーの質問と、ドライブ内から関連性の高いアイテム（直近の更新ファイルを優先抽出）を抜粋した一覧を基に、該当しそうなフォルダやファイルを1つまたは複数選んで、親切に回答してください。
-回答には必ず該当するフォルダやファイルのリンク（[名称を開く](URL) の形式など、クリックしてブラウザで直接開けるように）を含めてください。ユーザーが「最近のもの」や「去年のもの」を探している場合は、更新日も参考にしてください。
+以下のユーザーの質問と、ドライブ内から関連性の高いアイテムを抜粋した一覧を基に、該当しそうなフォルダやファイルを1つまたは複数選んで、親切に回答してください。
+回答には必ず該当するフォルダやファイルのリンク（[名称](URL) の形式）を含めてください。
 
 【ユーザーの質問】
 ${userText}
 
-【関連ドライブアイテム一覧（更新日付き）】
+【関連ドライブアイテム一覧】
 ${itemListText}`;
 
       const loadingId = 'loading-' + Date.now();
       const messages = document.getElementById('chatMessages');
       messages.innerHTML += `
         <div id="${loadingId}" class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm max-w-[85%] text-slate-400 relative z-10" style="cursor:none;">
-          AIがドライブ内の最新ファイルを中心に捜索中...
+          AIがドライブ内を捜索中...
         </div>
       `;
       messages.scrollTop = messages.scrollHeight;
 
       try {
+        // 最新の安定版モデル gemini-3.5-flash を指定
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
           method: 'post',
           headers: { 'Content-Type': 'application/json' },
@@ -430,7 +447,6 @@ ${itemListText}`;
         const data = await response.json();
         document.getElementById(loadingId).remove();
 
-        // API側からエラーが返ってきている場合のハンドリング
         if (data.error) {
           console.error('Gemini API Error:', data.error);
           appendChatMessage('AIドライブアシスタント', `⚠️ APIエラー: ${data.error.message} (ステータス: ${data.error.code})`, false);
@@ -439,7 +455,17 @@ ${itemListText}`;
 
         if (data.candidates && data.candidates[0].content) {
           let aiReply = data.candidates[0].content.parts[0].text;
-          aiReply = aiReply.replace(/\[([^\]]+)\]\((https:\/\/[^\)]+)\)/g, '<a href="$2" target="_blank" class="text-indigo-600 underline font-medium hover:text-indigo-800">$1 ↗</a>');
+          
+          // AIが返した [名称](URL) を、フォルダ/ファイルアイコン付きのリンクに自動置換
+          aiReply = aiReply.replace(/\[([^\]]+)\]\((https:\/\/[^\)]+)\)/g, (match, title, url) => {
+            const found = allDriveItems.find(item => item.webViewLink === url);
+            let iconSrc = 'image/file.png';
+            if (found && found.mimeType === 'application/vnd.google-apps.folder') {
+              iconSrc = 'image/folder.png';
+            }
+            return `<a href="${url}" target="_blank" class="text-indigo-600 underline font-medium hover:text-indigo-800 inline-flex items-center gap-1.5"><img src="${iconSrc}" class="w-4 h-4 object-contain inline-block"><span>${title} ↗</span></a>`;
+          });
+
           appendChatMessage('AIドライブアシスタント', aiReply, false);
         } else {
           appendChatMessage('AIドライブアシスタント', 'すみません、うまく回答を生成できませんでした。もう一度試してみてください。', false);
