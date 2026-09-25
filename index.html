@@ -34,18 +34,18 @@
       border-radius: 50%;
     }
 
-    /* カーソルに遅れて追従する虹色のブラー */
+    /* カーソルに遅れて追従する虹色のブラー（z-index: 1 にしてメッセージの後ろに配置） */
     .cursor-glow {
       position: fixed;
       top: 0;
       left: 0;
       width: 150px;
       height: 150px;
-      background: radial-gradient(circle, rgba(255, 105, 180, 0.6), rgba(135, 206, 250, 0.6), transparent 70%);
+      background: radial-gradient(circle, rgba(255, 105, 180, 0.5), rgba(135, 206, 250, 0.5), transparent 70%);
       border-radius: 50%;
-      filter: blur(30px);
+      filter: blur(35px);
       pointer-events: none;
-      z-index: 2;
+      z-index: 1;
       transform: translate(-50%, -50%);
       opacity: 0;
       transition: left 0.5s ease-out, top 0.5s ease-out, width 0.3s, height 0.3s, opacity 0.3s;
@@ -69,7 +69,7 @@
       border-radius: 50%;
       filter: blur(25px);
       pointer-events: none;
-      z-index: 3;
+      z-index: 2;
       transform: translate(-50%, -50%);
       animation: waveAnimation 0.8s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
     }
@@ -83,14 +83,14 @@
     a, button, input { cursor: none; }
   </style>
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col selection:bg-pink-200">
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col selection:bg-pink-200 relative">
 
   <!-- カスタムカーソル要素 -->
   <div class="cursor-dot" id="cursorDot"></div>
   <div class="cursor-glow" id="cursorGlow"></div>
 
-  <!-- ヘッダー -->
-  <header class="bg-white border-b border-slate-200 sticky top-0 z-40 px-6 py-3 flex items-center justify-between shadow-sm">
+  <!-- ヘッダー (z-index 40 で前面に配置) -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-40 px-6 py-3 flex items-center justify-between shadow-sm relative">
     <div class="flex items-center space-x-3">
       <img src="image/dtaxlogo.png" alt="D-Tax Logo" class="h-9 w-auto object-contain">
       <span class="text-sm font-semibold tracking-tight text-slate-500 border-l pl-3 border-slate-300">Drive AI Chat Portal</span>
@@ -122,8 +122,8 @@
     </div>
   </header>
 
-  <!-- メインコンテンツ -->
-  <main class="flex-1 max-w-3xl w-full mx-auto px-4 py-8 flex flex-col justify-center items-center">
+  <!-- メインコンテンツ (z-index 10 でブラーより前面に配置) -->
+  <main class="flex-1 max-w-3xl w-full mx-auto px-4 py-8 flex flex-col justify-center items-center relative z-10">
     
     <!-- 1. ログイン前：中央にログインボタン配置 -->
     <div id="welcomeView" class="text-center py-16 w-full flex flex-col items-center">
@@ -149,14 +149,14 @@
 
       <!-- メッセージ履歴エリア -->
       <div id="chatMessages" class="flex-1 p-6 overflow-y-auto space-y-4 text-sm bg-slate-50/50">
-        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm max-w-[85%]">
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm max-w-[85%] relative z-10">
           <p class="text-xs font-semibold text-indigo-600 mb-1">AIドライブアシスタント</p>
-          ログインありがとうございます！ドライブの全ファイルとフォルダを読み込みました。「探し物は何ですか？」のバーから、いつでも気軽に話しかけてくださいね。
+          ログインありがとうございます！ドライブのファイルとフォルダを読み込みました。「探し物は何ですか？」のバーから、いつでも気軽に話しかけてくださいね。
         </div>
       </div>
 
       <!-- 入力エリア（「探し物は何ですか？」バー） -->
-      <div class="p-4 bg-white border-t border-slate-200">
+      <div class="p-4 bg-white border-t border-slate-200 relative z-10">
         <div class="relative shadow-md rounded-full border border-slate-200 bg-slate-50 flex items-center px-6 py-3.5 transition focus-within:bg-white focus-within:ring-2 focus-within:ring-indigo-500">
           <span class="text-lg mr-3">✨</span>
           <input type="text" id="chatInput" placeholder="探し物は何ですか？（例：去年のポップアップのフォルダどこだっけ？）" class="w-full bg-transparent focus:outline-none text-slate-700 text-sm" onkeypress="if(event.key === 'Enter') sendChatMessage()">
@@ -168,6 +168,29 @@
     </div>
 
   </main>
+
+  <!-- 右下の「？」ボタン（判定基準・検索仕組みの解説用） -->
+  <button onclick="openHelpModal()" class="fixed bottom-6 right-6 w-12 h-12 bg-white hover:bg-slate-100 border border-slate-200 rounded-full shadow-lg flex items-center justify-center text-slate-600 font-bold text-lg z-50 transition transform hover:scale-105 active:scale-95" title="検索・判定基準について">
+    ？
+  </button>
+
+  <!-- 解説モーダル -->
+  <div id="helpModal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <h3 class="font-bold text-slate-900 text-base flex items-center gap-2"><span>🔍</span> AI検索・判定の仕組みについて</h3>
+        <button onclick="closeHelpModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 transition">✕</button>
+      </div>
+      <div class="text-xs text-slate-600 space-y-3 leading-relaxed">
+        <p><strong>1. ドライブ巡回とデータ保持</strong><br>Google Drive APIを使用して、あなたのマイドライブ内にある「フォルダ」および「ファイル」の名称、説明欄、更新日時、リンクを安全に取得しています。</p>
+        <p><strong>2. スマートキーワード ＆ 直近2年間の優先絞り込み</strong><br>ファイル数が多いため、質問のキーワード一致度に加え、<strong>ここ2年間（24ヶ月以内）に更新されたファイル</strong>を優先的にスコアリングし、AIへ正確に渡すことでエラーや探し漏れを防ぎます。</p>
+        <p><strong>3. Geminiによる意味理解</strong><br>抽出されたファイルリスト（更新日付き）とあなたの質問をGemini 1.5 Flashに渡し、曖昧な記憶からでも文脈を推論して、ダイレクトに開けるリンク付きで回答を生成しています。</p>
+      </div>
+      <div class="pt-2 text-right">
+        <button onclick="closeHelpModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-5 py-2.5 rounded-xl font-medium transition">閉じる</button>
+      </div>
+    </div>
+  </div>
 
   <script>
     // --- 設定項目 ---
@@ -207,6 +230,14 @@
 
     function toggleMenu() {
       document.getElementById('dropdownMenu').classList.toggle('hidden');
+    }
+
+    function openHelpModal() {
+      document.getElementById('helpModal').classList.remove('hidden');
+    }
+
+    function closeHelpModal() {
+      document.getElementById('helpModal').classList.add('hidden');
     }
 
     window.onload = function () {
@@ -300,7 +331,7 @@
       const senderColor = isUser ? 'text-indigo-600' : 'text-slate-400';
       
       messages.innerHTML += `
-        <div class="p-4 rounded-2xl border max-w-[85%] ${alignClass}" style="cursor:none;">
+        <div class="p-4 rounded-2xl border max-w-[85%] ${alignClass} relative z-10" style="cursor:none;">
           <p class="text-xs font-semibold ${senderColor} mb-1">${sender}</p>
           <div class="leading-relaxed space-y-1">${text}</div>
         </div>
@@ -326,26 +357,63 @@
         return;
       }
 
-      const itemListText = allDriveItems.map((item, i) => {
+      // 2年前の日付を計算
+      const twoYearsAgo = new Date();
+      twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
+
+      // 【スマート絞り込み ＋ 直近2年間の優先スコアリング】
+      const queryKeywords = userText.toLowerCase().split(/\s+/);
+      const scoredItems = allDriveItems.map(item => {
+        let score = 0;
+        const name = (item.name || '').toLowerCase();
+        const desc = (item.description || '').toLowerCase();
+        
+        // キーワード一致ボーナス
+        queryKeywords.forEach(kw => {
+          if (name.includes(kw)) score += 5;
+          if (desc.includes(kw)) score += 2;
+        });
+        
+        // フォルダには少しボーナス
+        if (item.mimeType === 'application/vnd.google-apps.folder') score += 1;
+
+        // 【ここ2年以内に更新されたファイルにボーナスを付与】
+        if (item.modifiedTime) {
+          const modDate = new Date(item.modifiedTime);
+          if (modDate >= twoYearsAgo) {
+            score += 3; 
+          }
+        }
+        
+        return { item, score };
+      });
+
+      // スコアが高い順にソートして上位150件を抽出
+      scoredItems.sort((a, b) => b.score - a.score);
+      const targetItems = scoredItems.slice(0, 150).map(s => s.item);
+
+      // AIに渡すリストに更新日時（年月日）を含める
+      const itemListText = targetItems.map((item, i) => {
         const typeStr = item.mimeType === 'application/vnd.google-apps.folder' ? '【フォルダ】' : '【ファイル】';
-        return `[${i+1}] ${typeStr} 名称: ${item.name} | 説明/タグ: ${item.description || 'なし'} | リンク: ${item.webViewLink}`;
+        const dateStr = item.modifiedTime ? item.modifiedTime.split('T')[0] : '不明';
+        return `[${i+1}] ${typeStr} 名称: ${item.name} | 更新日: ${dateStr} | 説明: ${item.description || 'なし'} | リンク: ${item.webViewLink}`;
       }).join('\n');
 
-      const prompt = `あなたはユーザーのGoogleドライブ（フォルダやファイル）から目的のものを探し出す優秀なAIアシスタントです。
-以下のユーザーの質問と、ユーザーのドライブ内にあるフォルダ・ファイルの一覧を基に、該当しそうなフォルダやファイルを1つまたは複数選んで、親切に回答してください。
-回答には必ず該当するフォルダやファイルのリンク（[名称を開く](URL) の形式など、クリックしてブラウザで直接開けるように）を含めてください。
+      const prompt = `あなたはユーザーのGoogleドライブから目的のものを探し出す優秀なAIアシスタントです。
+以下のユーザーの質問と、ドライブ内から関連性の高いアイテム（直近の更新ファイルを優先抽出）を抜粋した一覧を基に、該当しそうなフォルダやファイルを1つまたは複数選んで、親切に回答してください。
+回答には必ず該当するフォルダやファイルのリンク（[名称を開く](URL) の形式など、クリックしてブラウザで直接開けるように）を含めてください。ユーザーが「最近のもの」や「去年のもの」を探している場合は、更新日も参考にしてください。
 
 【ユーザーの質問】
 ${userText}
 
-【ドライブ内のアイテム一覧】
+【関連ドライブアイテム一覧（更新日付き）】
 ${itemListText}`;
 
       const loadingId = 'loading-' + Date.now();
       const messages = document.getElementById('chatMessages');
       messages.innerHTML += `
-        <div id="${loadingId}" class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm max-w-[85%] text-slate-400" style="cursor:none;">
-          AIがドライブ内のフォルダやファイルを捜索中...
+        <div id="${loadingId}" class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm max-w-[85%] text-slate-400 relative z-10" style="cursor:none;">
+          AIがドライブ内の最新ファイルを中心に捜索中...
         </div>
       `;
       messages.scrollTop = messages.scrollHeight;
