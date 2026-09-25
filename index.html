@@ -430,6 +430,13 @@ ${itemListText}`;
         const data = await response.json();
         document.getElementById(loadingId).remove();
 
+        // API側からエラーが返ってきている場合のハンドリング
+        if (data.error) {
+          console.error('Gemini API Error:', data.error);
+          appendChatMessage('AIドライブアシスタント', `⚠️ APIエラー: ${data.error.message} (ステータス: ${data.error.code})`, false);
+          return;
+        }
+
         if (data.candidates && data.candidates[0].content) {
           let aiReply = data.candidates[0].content.parts[0].text;
           aiReply = aiReply.replace(/\[([^\]]+)\]\((https:\/\/[^\)]+)\)/g, '<a href="$2" target="_blank" class="text-indigo-600 underline font-medium hover:text-indigo-800">$1 ↗</a>');
@@ -440,7 +447,7 @@ ${itemListText}`;
       } catch (err) {
         document.getElementById(loadingId).remove();
         console.error(err);
-        appendChatMessage('AIドライブアシスタント', 'API通信エラーが発生しました。', false);
+        appendChatMessage('AIドライブアシスタント', '通信エラーが発生しました（コンソールをご確認ください）。', false);
       }
     }
   </script>
