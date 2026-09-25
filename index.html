@@ -129,7 +129,7 @@
     <div id="welcomeView" class="text-center py-16 w-full flex flex-col items-center">
       <div class="bg-white border border-slate-200 p-10 rounded-3xl shadow-lg max-w-md w-full text-center">
         <h2 class="text-2xl font-bold tracking-tight text-slate-900 mb-2">Drive AI Assistant</h2>
-        <p class="text-sm text-slate-500 mb-8">Googleアカウントでログインして、ドライブ内のファイルをAIと対話しながら検索しましょう。</p>
+        <p class="text-sm text-slate-500 mb-8">会社名やキーワードを指定して、ドライブ内のフォルダをピンポイントで絞り込んで検索しましょう。</p>
         
         <button onclick="handleAuthClick()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3.5 px-6 rounded-2xl font-medium shadow-md transition transform active:scale-95 text-base flex items-center justify-center gap-2">
           <span>🔒</span> Googleアカウントでログイン
@@ -142,18 +142,22 @@
       <div class="bg-white border border-slate-200 p-10 rounded-3xl shadow-lg max-w-md w-full text-center space-y-4">
         <div class="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
         <h3 class="text-lg font-bold text-slate-900">Googleドライブを巡回中...</h3>
-        <p id="loadingStatusDetail" class="text-xs text-slate-500">ファイルとフォルダの情報を取得しています。完了までしばらくお待ちください。</p>
+        <p id="loadingStatusDetail" class="text-xs text-slate-500">ファイルとフォルダの階層構造を取得しています。完了までしばらくお待ちください。</p>
       </div>
     </div>
 
     <!-- 3. ログイン後＆巡回完了：チャット画面 -->
     <div id="chatPortalView" class="hidden flex flex-col h-[78vh] bg-white border border-slate-200 rounded-3xl shadow-sm overflow-hidden w-full">
-      <!-- ステータスヘッダー -->
+      <!-- ステータスヘッダー（現在のフォルダスコープ表示） -->
       <div class="bg-slate-50 border-b border-slate-100 px-6 py-3 flex items-center justify-between text-xs text-slate-500">
-        <span id="driveStatusText" class="flex items-center gap-2 font-medium text-slate-700">
-          <span class="w-2 h-2 rounded-full bg-emerald-500"></span> 準備完了
-        </span>
-        <button onclick="fetchDriveItems()" class="hover:text-indigo-600 underline transition">再スキャン</button>
+        <div id="scopeStatusBar" class="flex items-center gap-2 font-medium text-slate-700">
+          <span class="w-2 h-2 rounded-full bg-emerald-500"></span> 
+          <span id="scopeText">全ドライブ検索モード</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <button id="resetScopeBtn" onclick="resetFolderScope()" class="hidden text-indigo-600 hover:underline transition">全体検索に戻す</button>
+          <button onclick="fetchDriveItems()" class="hover:text-indigo-600 underline transition">再スキャン</button>
+        </div>
       </div>
 
       <!-- メッセージ履歴エリア -->
@@ -163,17 +167,18 @@
             <img src="image/folder.png" alt="" class="w-5 h-5 object-contain mt-0.5 shrink-0">
             <div>
               <p class="text-xs font-semibold text-indigo-600 mb-1">AIドライブアシスタント</p>
-              ログインありがとうございます！ドライブの巡回が完了しました。「探し物は何ですか？」のバーから、いつでも気軽に話しかけてくださいね。
+              ログインありがとうございます！ドライブの巡回が完了しました。<br>
+              まずは調べたい<strong>「会社名」や「プロジェクト名」</strong>を教えてください。該当するフォルダを検出してご案内します！
             </div>
           </div>
         </div>
       </div>
 
-      <!-- 入力エリア（「探し物は何ですか？」バー） -->
+      <!-- 入力エリア -->
       <div class="p-4 bg-white border-t border-slate-200 relative z-10">
         <div class="relative shadow-md rounded-full border border-slate-200 bg-slate-50 flex items-center px-6 py-3.5 transition focus-within:bg-white focus-within:ring-2 focus-within:ring-indigo-500">
           <span class="text-lg mr-3">✨</span>
-          <input type="text" id="chatInput" placeholder="探し物は何ですか？（例：去年のポップアップのフォルダどこだっけ？）" class="w-full bg-transparent focus:outline-none text-slate-700 text-sm" onkeypress="if(event.key === 'Enter') sendChatMessage()">
+          <input type="text" id="chatInput" placeholder="例：THE HYUNDAI のフォルダを探して / freeeの資料どこ？" class="w-full bg-transparent focus:outline-none text-slate-700 text-sm" onkeypress="if(event.key === 'Enter') sendChatMessage()">
           <button onclick="sendChatMessage()" class="ml-2 bg-indigo-600 text-white p-2.5 rounded-full hover:bg-indigo-700 transition shrink-0">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
           </button>
@@ -184,7 +189,7 @@
   </main>
 
   <!-- 右下の「？」ボタン -->
-  <button onclick="openHelpModal()" class="fixed bottom-6 right-6 w-12 h-12 bg-white hover:bg-slate-100 border border-slate-200 rounded-full shadow-lg flex items-center justify-center text-slate-600 font-bold text-lg z-50 transition transform hover:scale-105 active:scale-95" title="検索・判定基準について">
+  <button onclick="openHelpModal()" class="fixed bottom-6 right-6 w-12 h-12 bg-white hover:bg-slate-100 border border-slate-200 rounded-full shadow-lg flex items-center justify-center text-slate-600 font-bold text-lg z-50 transition transform hover:scale-105 active:scale-95" title="使い方について">
     ？
   </button>
 
@@ -192,13 +197,13 @@
   <div id="helpModal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4">
       <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-        <h3 class="font-bold text-slate-900 text-base flex items-center gap-2"><span>🔍</span> AI検索・判定の仕組みについて</h3>
+        <h3 class="font-bold text-slate-900 text-base flex items-center gap-2"><span>🔍</span> フォルダ絞り込み検索の仕組み</h3>
         <button onclick="closeHelpModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 transition">✕</button>
       </div>
       <div class="text-xs text-slate-600 space-y-3 leading-relaxed">
-        <p><strong>1. 初回ドライブ巡回とカード型リンク表示</strong><br>ログイン時にマイドライブ内を巡回し、検索結果やAIが提案した関連ファイル・フォルダを、メッセージ下の専用カードエリアにアイコン付きでリッチに表示します。</p>
-        <p><strong>2. スマートキーワード ＆ 直近2年間の優先絞り込み</strong><br>質問のキーワード一致度に加え、直近2年以内に更新されたファイルを優先的にスコアリングしてAIへ渡します。</p>
-        <p><strong>3. Geminiによる意味理解</strong><br>最新のGemini 3.5 Flashモデルを活用し、曖昧な記憶からでも文脈を推論して最適なアイテムをカードで提案します。</p>
+        <p><strong>1. 会社名・プロジェクトの特定</strong><br>最初に調べたい会社名やキーワードを入力すると、AIが合致するフォルダを検出して提案します。</p>
+        <p><strong>2. フォルダのコンテキスト固定</strong><br>提案されたフォルダを選択すると、それ以降はその中にあるファイルだけを対象に高速かつ正確にチャット検索できます（API制限対策にも最適です）。</p>
+        <p><strong>3. 全体検索への切り替え</strong><br>別の会社や用件を調べたい時は、いつでも「全体検索に戻す」ボタンでスコープをリセットできます。</p>
       </div>
       <div class="pt-2 text-right">
         <button onclick="closeHelpModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-5 py-2.5 rounded-xl font-medium transition">閉じる</button>
@@ -215,6 +220,7 @@
     let tokenClient;
     let accessToken = null;
     let allDriveItems = [];
+    let currentFolderContext = null; // 現在ロックしているフォルダ { id, name }
 
     // --- 演出関連（カスタムカーソル等） ---
     const cursorDot = document.getElementById('cursorDot');
@@ -291,6 +297,7 @@
     function handleLogout() {
       accessToken = null;
       allDriveItems = [];
+      currentFolderContext = null;
       document.getElementById('chatPortalView').classList.add('hidden');
       document.getElementById('loadingView').classList.add('hidden');
       document.getElementById('welcomeView').classList.remove('hidden');
@@ -305,10 +312,11 @@
         let allItems = [];
         let pageToken = null;
 
-        document.getElementById('loadingStatusDetail').innerText = 'ドライブのアイテムをスキャン中...';
+        document.getElementById('loadingStatusDetail').innerText = 'ドライブのアイテムと階層構造をスキャン中...';
         
         do {
-          let url = `https://www.googleapis.com/drive/v3/files?pageSize=100&fields=nextPageToken,files(id,name,webViewLink,mimeType,modifiedTime,description)`;
+          // parents も取得してフォルダ階層を追跡できるようにする
+          let url = `https://www.googleapis.com/drive/v3/files?pageSize=100&fields=nextPageToken,files(id,name,webViewLink,mimeType,modifiedTime,description,parents)`;
           if (pageToken) {
             url += `&pageToken=${pageToken}`;
           }
@@ -333,9 +341,7 @@
         document.getElementById('loadingView').classList.add('hidden');
         document.getElementById('chatPortalView').classList.remove('hidden');
 
-        document.getElementById('driveStatusText').innerHTML = `
-          <span class="w-2 h-2 rounded-full bg-emerald-500"></span> ドライブ巡回完了 (フォルダ: ${folderCount}件 / ファイル: ${fileCount}件)
-        `;
+        document.getElementById('scopeText').innerHTML = `全ドライブ検索モード (フォルダ: ${folderCount}件 / ファイル: ${fileCount}件)`;
       } catch (err) {
         console.error('アイテム取得エラー:', err);
         document.getElementById('loadingView').classList.add('hidden');
@@ -344,8 +350,49 @@
       }
     }
 
-    // --- 対話チャット & Gemini API 連携 ---
-    function appendChatMessage(sender, text, isUser = false, matchedItems = []) {
+    function selectFolderContext(folderId, folderName) {
+      currentFolderContext = { id: folderId, name: folderName };
+      document.getElementById('scopeText').innerText = `選択中フォルダ: ${folderName}`;
+      document.getElementById('resetScopeBtn').classList.remove('hidden');
+      
+      appendChatMessage('AIドライブアシスタント', `「<strong>${folderName}</strong>」フォルダにスコープを固定しました！この中にあるファイルやサブフォルダについて、何でも聞いてください。`, false);
+    }
+
+    function resetFolderScope() {
+      currentFolderContext = null;
+      const folderCount = allDriveItems.filter(f => f.mimeType === 'application/vnd.google-apps.folder').length;
+      const fileCount = allDriveItems.length - folderCount;
+      document.getElementById('scopeText').innerHTML = `全ドライブ検索モード (フォルダ: ${folderCount}件 / ファイル: ${fileCount}件)`;
+      document.getElementById('resetScopeBtn').classList.add('hidden');
+      
+      appendChatMessage('AIドライブアシスタント', '全体検索モードに戻りました。別の会社名やキーワードを入力してください。', false);
+    }
+
+    // --- 自動リトライ付き Gemini API 呼び出し ---
+    async function callGeminiWithRetry(promptText, retries = 2, delay = 2000) {
+      for (let i = 0; i < retries; i++) {
+        try {
+          const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+            method: 'post',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
+          });
+          const data = await response.json();
+
+          if (data.error && (data.error.code === 503 || data.error.code === 429) && i < retries - 1) {
+            await new Promise(resolve => setTimeout(resolve, delay));
+            continue;
+          }
+          return data;
+        } catch (err) {
+          if (i === retries - 1) throw err;
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+    }
+
+    // --- メッセージ＆カード描画 ---
+    function appendChatMessage(sender, text, isUser = false, matchedItems = [], folderChoices = []) {
       const messages = document.getElementById('chatMessages');
       
       if (isUser) {
@@ -358,10 +405,26 @@
           </div>
         `;
       } else {
-        // AIの返信 ＋ メッセージ下のカード群生成
         let cardsHtml = '';
+        
+        // フォルダ選択ボタン群
+        if (folderChoices && folderChoices.length > 0) {
+          cardsHtml += `<div class="mt-3 space-y-2"><p class="text-xs font-semibold text-slate-500">📂 該当しそうなフォルダ（クリックして選択）:</p><div class="grid grid-cols-1 sm:grid-cols-2 gap-2">`;
+          folderChoices.forEach(folder => {
+            cardsHtml += `
+              <button onclick="selectFolderContext('${folder.id}', '${folder.name.replace(/'/g, "\\'")}')" class="flex items-center gap-2.5 p-2.5 bg-indigo-50/70 hover:bg-indigo-100 border border-indigo-200 rounded-xl transition text-left group">
+                <img src="image/folder.png" class="w-5 h-5 object-contain shrink-0">
+                <span class="text-xs font-medium text-indigo-900 truncate flex-1 group-hover:underline">${folder.name}</span>
+                <span class="text-xs text-indigo-600 shrink-0">選択 ↗</span>
+              </button>
+            `;
+          });
+          cardsHtml += `</div></div>`;
+        }
+
+        // 通常のファイル・フォルダカード群
         if (matchedItems && matchedItems.length > 0) {
-          cardsHtml = `<div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2.5">`;
+          cardsHtml += `<div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2.5">`;
           matchedItems.forEach(item => {
             const isFolder = item.mimeType === 'application/vnd.google-apps.folder';
             const iconImg = isFolder ? 'image/folder.png' : 'image/file.png';
@@ -412,11 +475,23 @@
         return;
       }
 
-      const twoYearsAgo = new Date();
-      twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
+      // --- 判定ロジック ---
+      // 1. もしフォルダがまだ選択されておらず、ユーザーが会社名やフォルダを探している場合の挙動：
+      // まずフォルダ候補をピックアップする
+      let workingItems = allDriveItems;
+      
+      if (currentFolderContext) {
+        // 現在選択中のフォルダの直下（または含まれる）アイテムにスコープを限定
+        // parents に currentFolderContext.id を持つものを抽出
+        workingItems = allDriveItems.filter(item => item.parents && item.parents.includes(currentFolderContext.id));
+        // もし直下にない場合も想定して、全体からも検索できるようにフォールバックを残す
+        if (workingItems.length === 0) {
+          workingItems = allDriveItems;
+        }
+      }
 
       const queryKeywords = userText.toLowerCase().split(/\s+/);
-      const scoredItems = allDriveItems.map(item => {
+      const scoredItems = workingItems.map(item => {
         let score = 0;
         const name = (item.name || '').toLowerCase();
         const desc = (item.description || '').toLowerCase();
@@ -426,20 +501,25 @@
           if (desc.includes(kw)) score += 2;
         });
         
-        if (item.mimeType === 'application/vnd.google-apps.folder') score += 1;
-
-        if (item.modifiedTime) {
-          const modDate = new Date(item.modifiedTime);
-          if (modDate >= twoYearsAgo) {
-            score += 3; 
-          }
-        }
-        
+        if (item.mimeType === 'application/vnd.google-apps.folder') score += 2;
         return { item, score };
       });
 
       scoredItems.sort((a, b) => b.score - a.score);
-      const targetItems = scoredItems.slice(0, 150).map(s => s.item);
+      const targetItems = scoredItems.slice(0, 100).map(s => s.item);
+
+      // もしフォルダが未選択で、ユーザーのクエリから「フォルダ候補」を強く推測できる場合
+      let folderChoices = [];
+      if (!currentFolderContext) {
+        const topFolders = allDriveItems.filter(item => item.mimeType === 'application/vnd.google-apps.folder');
+        const matchedFolders = topFolders.filter(f => {
+          const fname = f.name.toLowerCase();
+          return queryKeywords.some(kw => fname.includes(kw));
+        });
+        if (matchedFolders.length > 0) {
+          folderChoices = matchedFolders.slice(0, 4);
+        }
+      }
 
       const itemListText = targetItems.map((item, i) => {
         const typeStr = item.mimeType === 'application/vnd.google-apps.folder' ? '【フォルダ】' : '【ファイル】';
@@ -447,47 +527,42 @@
         return `[${i+1}] ${typeStr} 名称: ${item.name} | 更新日: ${dateStr} | 説明: ${item.description || 'なし'} | ID: ${item.id}`;
       }).join('\n');
 
+      const scopeDesc = currentFolderContext ? `現在の選択フォルダ: "${currentFolderContext.name}" の中から検索しています。` : '全体ドライブから検索しています。';
+
       const prompt = `あなたはユーザーのGoogleドライブから目的のものを探し出す優秀なAIアシスタントです。
-以下のユーザーの質問と、ドライブ内から関連性の高いアイテム一覧を基に、該当しそうなフォルダやファイルをいくつか選んで親切に回答してください。
+${scopeDesc}
+以下のユーザーの質問と、アイテム一覧を基に、該当しそうなフォルダやファイルをいくつか選んで親切に回答してください。
 回答の最後に、提案したアイテムの番号（例: [1], [3] のように）を必ず含めてください。
 
 【ユーザーの質問】
 ${userText}
 
-【関連ドライブアイテム一覧】
+【ドライブアイテム一覧】
 ${itemListText}`;
 
       const loadingId = 'loading-' + Date.now();
       const messages = document.getElementById('chatMessages');
       messages.innerHTML += `
         <div id="${loadingId}" class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm max-w-[85%] text-slate-400 relative z-10" style="cursor:none;">
-          AIがドライブ内を捜索中...
+          ドライブ内を検索中...
         </div>
       `;
       messages.scrollTop = messages.scrollHeight;
 
       try {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
-          method: 'post',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }]
-          })
-        });
-
-        const data = await response.json();
+        const data = await callGeminiWithRetry(prompt);
         document.getElementById(loadingId).remove();
 
-        if (data.error) {
-          console.error('Gemini API Error:', data.error);
-          appendChatMessage('AIドライブアシスタント', `⚠️ APIエラー: ${data.error.message} (ステータス: ${data.error.code})`, false);
+        if (!data || data.error) {
+          console.warn('API制限または混雑。ローカル検索に切り替えます。');
+          const fallbackItems = scoredItems.filter(s => s.score > 0).slice(0, 4).map(s => s.item);
+          appendChatMessage('AIドライブアシスタント', `混雑中のためローカル検索結果を表示します。「${userText}」に関連しそうなアイテムはこちらです。`, false, fallbackItems.length > 0 ? fallbackItems : targetItems.slice(0, 4), folderChoices);
           return;
         }
 
         if (data.candidates && data.candidates[0].content) {
           let aiReply = data.candidates[0].content.parts[0].text;
           
-          // AIの返答に含まれる [1], [3] などの番号を抽出し、対応するドライブアイテムのカードリストを構築
           const matchedIndices = [...aiReply.matchAll(/\[(\d+)\]/g)].map(m => parseInt(m[1]) - 1);
           let uniqueItems = [];
           matchedIndices.forEach(idx => {
@@ -496,22 +571,21 @@ ${itemListText}`;
             }
           });
 
-          // もしAIが番号形式で書かなくても、スコア上位の数件を自動で下部にカード表示するフォールバック
-          if (uniqueItems.length === 0) {
+          if (uniqueItems.length === 0 && folderChoices.length === 0) {
             uniqueItems = targetItems.slice(0, 3);
           }
 
-          // テキスト内の余分な [1] などの番号タグをすっきり置換またはそのままクリーンアップ
           aiReply = aiReply.replace(/\[\d+\]/g, '');
 
-          appendChatMessage('AIドライブアシスタント', aiReply, false, uniqueItems);
+          appendChatMessage('AIドライブアシスタント', aiReply, false, uniqueItems, folderChoices);
         } else {
-          appendChatMessage('AIドライブアシスタント', 'すみません、うまく回答を生成できませんでした。もう一度試してみてください。', false);
+          appendChatMessage('AIドライブアシスタント', '関連するアイテムをピックアップしました。', false, targetItems.slice(0, 3), folderChoices);
         }
       } catch (err) {
         document.getElementById(loadingId).remove();
         console.error(err);
-        appendChatMessage('AIドライブアシスタント', '通信エラーが発生しました（コンソールをご確認ください）。', false);
+        const fallbackItems = scoredItems.filter(s => s.score > 0).slice(0, 4).map(s => s.item);
+        appendChatMessage('AIドライブアシスタント', '通信制限によりローカル検索結果を表示します。', false, fallbackItems, folderChoices);
       }
     }
   </script>
