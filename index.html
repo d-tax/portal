@@ -276,16 +276,33 @@
       toggleMenu();
     }
 
-    // Googleドライブから「フォルダ」と「ファイル」の双方を巡回取得
+    // Googleドライブから「フォルダ」と「ファイル」を全件巡回取得する（ページネーション対応）
     async function fetchDriveItems() {
       if (!accessToken) return;
       try {
-        // フォルダ (application/vnd.google-apps.folder) も含めて最大150件取得
-        const response = await fetch('https://www.googleapis.com/drive/v3/files?pageSize=150&fields=files(id,name,webViewLink,mimeType,modifiedTime,description)', {
-          headers: { 'Authorization': `Bearer ${accessToken}` }
-        });
-        const data = await response.json();
-        allDriveItems = data.files || [];
+        let allItems = [];
+        let pageToken = null;
+        
+        do {
+          // 1回につき最大100件ずつ、最後までループして取得する
+          let url = `https://www.googleapis.com/drive/v3/files?pageSize=100&fields=nextPageToken,files(id,name,webViewLink,mimeType,modifiedTime,description)`;
+          if (pageToken) {
+            url += `&pageToken=${pageToken}`;
+          }
+    
+          const response = await fetch(url, {
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+          });
+          const data = await response.json();
+          
+          if (data.files) {
+            allItems = allItems.concat(data.files);
+          }
+          pageToken = data.nextPageToken;
+          
+        } while (pageToken); // 次のページがなくなるまでループ
+    
+        allDriveItems = allItems;
         
         const folderCount = allDriveItems.filter(f => f.mimeType === 'application/vnd.google-apps.folder').length;
         const fileCount = allDriveItems.length - folderCount;
@@ -293,7 +310,7 @@
         document.getElementById('driveStatusText').innerHTML = `
           <span class="w-2 h-2 rounded-full bg-emerald-500"></span> ドライブ巡回完了 (フォルダ: ${folderCount}件 / ファイル: ${fileCount}件)
         `;
-      } catch (err) {
+      } `catch` (err) {
         console.error('アイテム取得エラー:', err);
         document.getElementById('driveStatusText').innerHTML = `
           <span class="w-2 h-2 rounded-full bg-rose-500"></span> ドライブ取得エラー
