@@ -1,5 +1,6 @@
 <!-- 554521661384-kpp41s620jutab56eu2qi0b7bcbrfgl6.apps.googleusercontent.com -->
 
+
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -16,22 +17,44 @@
       min-height: 100vh;
       display: flex;
       flex-direction: column;
+      overflow-x: hidden;
     }
 
-    /* ヘッダー */
+    /* ヘッダー & 検索コントロール */
     header {
-      padding: 16px 24px;
-      background: rgba(255, 255, 255, 0.8);
+      padding: 12px 24px;
+      background: rgba(255, 255, 255, 0.85);
       backdrop-filter: blur(10px);
       border-bottom: 2px solid #e2e8f0;
       display: flex;
       justify-content: space-between;
       align-items: center;
       box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+      z-index: 100;
+      gap: 15px;
+      flex-wrap: wrap;
     }
-    h1 { font-size: 18px; margin: 0; color: #2d3748; font-weight: 600; }
+    h1 { font-size: 18px; margin: 0; color: #2d3748; font-weight: 600; white-space: nowrap; }
 
-    /* ボタン類 (やわらかいデザイン) */
+    .search-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #f1f5f9;
+      padding: 6px 12px;
+      border-radius: 20px;
+      border: 1px solid #cbd5e1;
+    }
+    .search-bar input, .search-bar select {
+      border: none;
+      background: transparent;
+      outline: none;
+      font-size: 13px;
+      color: #334155;
+    }
+    .search-bar input[type="text"] { width: 200px; }
+
+    /* ボタン */
     .btn {
       padding: 8px 18px;
       background: #7c3aed;
@@ -43,35 +66,55 @@
       font-weight: 500;
       box-shadow: 0 4px 10px rgba(124, 58, 237, 0.2);
       transition: all 0.3s ease;
+      white-space: nowrap;
     }
     .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(124, 58, 237, 0.3); }
 
-    /* トーナメント表示エリア */
-    #tournament-container {
+    /* 全体表示コンテナ（キャンバス＆トーナメント） */
+    #workspace {
+      position: relative;
       flex: 1;
       display: flex;
+      overflow: auto;
+    }
+
+    /* SVG接続線描画用キャンバス */
+    #connector-svg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* トーナメント表示エリア */
+    #tournament-container {
+      position: relative;
+      z-index: 2;
+      display: flex;
       padding: 40px;
-      overflow-x: auto;
       align-items: center;
-      gap: 60px; /* カラム間の間隔 */
+      gap: 70px; /* カラム間隔 */
+      min-height: 100%;
     }
 
     /* ラウンド（階層）カラム */
     .round-column {
       display: flex;
       flex-direction: column;
-      justify-content: space-around;
+      justify-content: center;
       min-width: 220px;
-      height: 100%;
-      gap: 20px;
+      gap: 16px;
     }
 
     /* トーナメントカード（ノード） */
     .node-card {
       background: #ffffff;
-      padding: 12px 16px;
+      padding: 10px 16px;
       border-radius: 16px;
-      box-shadow: 0 8px 20px rgba(149, 157, 165, 0.1);
+      box-shadow: 0 4px 12px rgba(149, 157, 165, 0.08);
       border: 2px solid #edf2f7;
       cursor: pointer;
       transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
@@ -81,9 +124,9 @@
       gap: 12px;
     }
     .node-card:hover {
-      transform: scale(1.04);
+      transform: scale(1.03);
       border-color: #a78bfa;
-      box-shadow: 0 12px 25px rgba(167, 139, 250, 0.25);
+      box-shadow: 0 8px 20px rgba(167, 139, 250, 0.2);
     }
     .node-card.selected {
       background: #f3e8ff;
@@ -94,23 +137,32 @@
 
     /* アイコン画像用スタイル */
     .icon-img {
-      width: 24px;
-      height: 24px;
+      width: 22px;
+      height: 22px;
       object-fit: contain;
       flex-shrink: 0;
     }
 
-    /* ドライブ用の特別カード色 */
-    .node-card.drive-a { border-left: 6px solid #f472b6; } /* パステルピンク */
-    .node-card.drive-b { border-left: 6px solid #38bdf8; } /* パステルブルー */
-    .node-card.drive-c { border-left: 6px solid #34d399; } /* パステルグリーン */
+    .node-card.drive-a { border-left: 6px solid #f472b6; }
+    .node-card.drive-b { border-left: 6px solid #38bdf8; }
+    .node-card.drive-c { border-left: 6px solid #34d399; }
 
     .title {
       font-size: 13px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      max-width: 140px;
+      max-width: 150px;
+    }
+
+    /* SVG線のほわんとしたスタイル */
+    .path-line {
+      fill: none;
+      stroke: #a78bfa;
+      stroke-width: 3;
+      stroke-linecap: round;
+      opacity: 0.6;
+      transition: all 0.4s ease;
     }
   </style>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -118,14 +170,32 @@
 <body>
 
   <header>
-    <h1> Soft Drive Tournament</h1>
+    <h1> Drive Tournament</h1>
+
+    <!-- メタデータ対応 検索バー -->
+    <div class="search-bar">
+      <span>🔍</span>
+      <input type="text" id="search-input" placeholder="名前・説明欄を検索..." />
+      <select id="date-filter">
+        <option value="all">全期間</option>
+        <option value="7">過去1週間</option>
+        <option value="30">過去1ヶ月</option>
+        <option value="365">過去1年</option>
+      </select>
+      <button class="btn" style="padding: 4px 12px; font-size: 12px;" onclick="executeSearch()">検索</button>
+    </div>
+
     <div>
       <button id="login-btn" class="btn">Googleでログイン</button>
       <span id="status" style="margin-left: 10px; font-size: 12px; color: #718096;"></span>
     </div>
   </header>
 
-  <div id="tournament-container">
+  <div id="workspace">
+    <!-- ほわんとした接続線用のSVG -->
+    <svg id="connector-svg"></svg>
+
+    <div id="tournament-container">
     <!-- 第1ラウンド: 3つの共有フォルダ/ドライブ -->
     <div class="round-column" id="round-0">
       <div class="node-card drive-a" onclick="selectDrive('0AFuy2E2OGEvyUk9PVA', '共有ドライブ A', this)">
@@ -145,9 +215,11 @@
     <!-- ここに階層（第2ラウンド、第3ラウンド...）が動的に追加されます -->
   </div>
 
-  <script>
+    
+<script>
     const CLIENT_ID = '554521661384-kpp41s620jutab56eu2qi0b7bcbrfgl6.apps.googleusercontent.com';
     let accessToken = null;
+    let selectedPath = []; // 選択中のノードの履歴（SVG線を描画するため）
 
     document.getElementById('login-btn').addEventListener('click', () => {
       const tokenClient = google.accounts.oauth2.initTokenClient({
@@ -163,29 +235,23 @@
       tokenClient.requestAccessToken();
     });
 
-    // ドライブ（http://A, B, C）を選択したときの処理
+    // ドライブ選択
     async function selectDrive(driveId, name, element) {
-      if (!accessToken) {
-        alert('先にGoogleでログインしてください！');
-        return;
-      }
+      if (!accessToken) { alert('ログインしてください'); return; }
+      selectedPath = [element];
       highlightSelection(element);
-      // ドライブ直下のフォルダを解析して第2ラウンドへ展開
-      await loadChildNodes(driveId, 1, true);
+      await loadChildNodes(driveId, 1);
     }
 
-    // 子フォルダ・ファイルを解析して次のラウンド（カラム）を追加
-    async function loadChildNodes(parentId, roundIndex, isDrive = false) {
-      document.getElementById('status').innerText = 'フォルダを解析中...';
-      
-      // 選択したラウンド以降のカラムをクリア
+    // 子要素読み込み
+    async function loadChildNodes(parentId, roundIndex) {
+      document.getElementById('status').innerText = '解析中...';
       clearRoundsFrom(roundIndex);
 
       try {
-        // フォルダ直下（または共有ドライブ直下）のデータを取得
         const query = `'${parentId}' in parents and trashed = false`;
         const res = await fetch(
-          `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=files(id,name,mimeType,webViewLink)&supportsAllDrives=true&includeItemsFromAllDrives=true&pageSize=50`,
+          `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=files(id,name,mimeType,description,modifiedTime,webViewLink)&supportsAllDrives=true&includeItemsFromAllDrives=true&pageSize=50`,
           { headers: { Authorization: `Bearer ${accessToken}` } }
         );
         const data = await res.json();
@@ -193,42 +259,48 @@
 
         renderNextRound(items, roundIndex);
         document.getElementById('status').innerText = `解析完了 (${items.length} 件)`;
+        
+        // 描画後にSVGラインを再計算
+        setTimeout(drawConnectors, 50);
       } catch (err) {
         console.error(err);
-        document.getElementById('status').innerText = '解析エラー';
+        document.getElementById('status').innerText = 'エラーが発生しました';
       }
     }
 
-    // 解析結果をトーナメントの次の列として描画
+    // 次のラウンド描画
     function renderNextRound(items, roundIndex) {
       const container = document.getElementById('tournament-container');
-      
       const column = document.createElement('div');
       column.className = 'round-column';
       column.id = `round-${roundIndex}`;
 
       if (items.length === 0) {
-        column.innerHTML = '<div style="font-size:12px; color:#a0aec0;">(中身は空です)</div>';
+        column.innerHTML = '<div style="font-size:12px; color:#a0aec0;">(空です)</div>';
       } else {
         items.forEach(item => {
           const isFolder = item.mimeType === 'application/vnd.google-apps.folder';
           const card = document.createElement('div');
           card.className = 'node-card';
+          card.dataset.id = item.id;
           
-          // カスタム画像アイコン (image/folder.png と image/file.png) を使用
           const iconSrc = isFolder ? 'image/folder.png' : 'image/file.png';
-          
           card.innerHTML = `
-            <img src="${iconSrc}" class="icon-img" alt="${isFolder ? 'folder' : 'file'}" />
-            <span class="title">${item.name}</span>
+            <img src="${iconSrc}" class="icon-img" alt="icon" />
+            <span class="title" title="${item.name}">${item.name}</span>
           `;
 
           card.addEventListener('click', () => {
+            // パス履歴を更新（SVG描画用）
+            selectedPath = selectedPath.slice(0, roundIndex);
+            selectedPath.push(card);
+
             highlightSelection(card);
             if (isFolder) {
               loadChildNodes(item.id, roundIndex + 1);
             } else {
-              // ファイルの場合は新しいタブでGoogle Driveを開く
+              clearRoundsFrom(roundIndex + 1);
+              drawConnectors();
               window.open(item.webViewLink, '_blank');
             }
           });
@@ -238,6 +310,100 @@
       }
 
       container.appendChild(column);
+    }
+
+    // 選択されたカードから次の列へ「ほわん」とした接続線を描画
+    function drawConnectors() {
+      const svg = document.getElementById('connector-svg');
+      const workspace = document.getElementById('workspace');
+      svg.innerHTML = ''; // クリア
+
+      // Workspaceの全領域サイズにSVGを調整
+      svg.setAttribute('width', workspace.scrollWidth);
+      svg.setAttribute('height', workspace.scrollHeight);
+
+      for (let i = 0; i < selectedPath.length - 1; i++) {
+        const parent = selectedPath[i];
+        const nextRoundCol = document.getElementById(`round-${i + 1}`);
+        if (!parent || !nextRoundCol) continue;
+
+        const pRect = parent.getBoundingClientRect();
+        const wRect = workspace.getBoundingClientRect();
+
+        // 親カードの右端中央の座標
+        const startX = pRect.right - wRect.left + workspace.scrollLeft;
+        const startY = pRect.top + pRect.height / 2 - wRect.top + workspace.scrollTop;
+
+        // 次のカラム内にある子ノード（またはカラム中央）に向けて曲線をひく
+        const childCards = nextRoundCol.querySelectorAll('.node-card');
+        childCards.forEach(child => {
+          const cRect = child.getBoundingClientRect();
+          // 子カードの左端中央の座標
+          const endX = cRect.left - wRect.left + workspace.scrollLeft;
+          const endY = cRect.top + cRect.height / 2 - wRect.top + workspace.scrollTop;
+
+          // ベジェ曲線の制御点（ほわんとした曲がり具合）
+          const dx = (endX - startX) * 0.5;
+          const pathD = `M ${startX} ${startY} C ${startX + dx} ${startY}, ${endX - dx} ${endY}, ${endX} ${endY}`;
+
+          const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+          path.setAttribute('d', pathD);
+          path.setAttribute('class', 'path-line');
+          
+          // 選択されたルートの場合は線を強調
+          if (selectedPath[i + 1] === child) {
+            path.style.stroke = '#8b5cf6';
+            path.style.strokeWidth = '4';
+            path.style.opacity = '1';
+          }
+
+          svg.appendChild(path);
+        });
+      }
+    }
+
+    // メタデータ対応 全体検索機能
+    async function executeSearch() {
+      const keyword = document.getElementById('search-input').value.trim();
+      const days = document.getElementById('date-filter').value;
+
+      if (!accessToken) { alert('ログインしてください'); return; }
+      if (!keyword && days === 'all') { alert('検索キーワードまたはフィルターを指定してください'); return; }
+
+      document.getElementById('status').innerText = 'メタデータ検索中...';
+
+      // Drive APIの fullText ＋ description ＋ modifiedTime 条件構築
+      let queryParts = ["trashed = false"];
+      if (keyword) {
+        queryParts.push(`(name contains '${keyword}' or description contains '${keyword}')`);
+      }
+      if (days !== 'all') {
+        const date = new Date();
+        date.setDate(date.getDate() - parseInt(days));
+        queryParts.push(`modifiedTime > '${date.toISOString()}'`);
+      }
+
+      const q = queryParts.join(' and ');
+
+      try {
+        const res = await fetch(
+          `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,name,mimeType,description,modifiedTime,parents,webViewLink)&supportsAllDrives=true&includeItemsFromAllDrives=true&pageSize=20`,
+          { headers: { Authorization: `Bearer ${accessToken}` } }
+        );
+        const data = await res.json();
+        const results = data.files || [];
+
+        if (results.length === 0) {
+          alert('該当するファイルが見つかりませんでした');
+        } else {
+          alert(`検索ヒット: ${results.length} 件\n最上部の「${results[0].name}」を開きます`);
+          window.open(results[0].webViewLink, '_blank');
+        }
+        document.getElementById('status').innerText = '';
+      } catch (err) {
+        console.error(err);
+        document.getElementById('status').innerText = '検索エラー';
+      }
     }
 
     function highlightSelection(element) {
@@ -253,7 +419,11 @@
         container.removeChild(document.getElementById(`round-${i}`));
         i++;
       }
+      drawConnectors();
     }
+
+    // ウィンドウリサイズ時にもSVG位置を自動再調整
+    window.addEventListener('resize', drawConnectors);
   </script>
 </body>
 </html>
