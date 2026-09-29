@@ -1,6 +1,5 @@
 <!-- 554521661384-kpp41s620jutab56eu2qi0b7bcbrfgl6.apps.googleusercontent.com -->
 
-
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -70,7 +69,7 @@
     }
     .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(124, 58, 237, 0.3); }
 
-    /* 全体表示コンテナ（キャンバス＆トーナメント） */
+    /* 全体表示コンテナ */
     #workspace {
       position: relative;
       flex: 1;
@@ -96,7 +95,7 @@
       display: flex;
       padding: 40px;
       align-items: center;
-      gap: 70px; /* カラム間隔 */
+      gap: 80px; /* カラム間隔 */
       min-height: 100%;
     }
 
@@ -106,36 +105,36 @@
       flex-direction: column;
       justify-content: center;
       min-width: 220px;
-      gap: 16px;
+      gap: 20px;
     }
 
     /* トーナメントカード（ノード） */
     .node-card {
       background: #ffffff;
       padding: 10px 16px;
-      border-radius: 16px;
+      border-radius: 12px;
       box-shadow: 0 4px 12px rgba(149, 157, 165, 0.08);
-      border: 2px solid #edf2f7;
+      border: 2px solid #cbd5e1;
       cursor: pointer;
-      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: all 0.2s ease;
       position: relative;
       display: flex;
       align-items: center;
       gap: 12px;
     }
     .node-card:hover {
-      transform: scale(1.03);
-      border-color: #a78bfa;
-      box-shadow: 0 8px 20px rgba(167, 139, 250, 0.2);
+      transform: scale(1.02);
+      border-color: #64748b;
     }
     .node-card.selected {
-      background: #f3e8ff;
-      border-color: #8b5cf6;
-      color: #6d28d9;
+      background: #ffffff;
+      border-color: #0f172a; /* 選択時は黒い太枠 */
+      border-width: 2px;
+      color: #0f172a;
       font-weight: bold;
+      box-shadow: 0 6px 16px rgba(15, 23, 42, 0.15);
     }
 
-    /* アイコン画像用スタイル */
     .icon-img {
       width: 22px;
       height: 22px;
@@ -155,14 +154,20 @@
       max-width: 150px;
     }
 
-    /* SVG線のほわんとしたスタイル */
-    .path-line {
+    /* SVG分岐線の基本スタイル（薄いグレー） */
+    .line-default {
       fill: none;
-      stroke: #a78bfa;
-      stroke-width: 3;
+      stroke: #cbd5e1; /* 薄いグレー */
+      stroke-width: 2;
+      stroke-linejoin: round;
       stroke-linecap: round;
-      opacity: 0.6;
-      transition: all 0.4s ease;
+      transition: stroke 0.3s ease, stroke-width 0.3s ease;
+    }
+
+    /* 選択ルートの線（黒） */
+    .line-active {
+      stroke: #0f172a !important; /* 黒 */
+      stroke-width: 2.5 !important;
     }
   </style>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -170,12 +175,12 @@
 <body>
 
   <header>
-    <h1> Drive Tournament</h1>
+    <h1>🌸 Soft Drive Tournament</h1>
 
-    <!-- メタデータ対応 検索バー -->
+    <!-- 検索バー -->
     <div class="search-bar">
       <span>🔍</span>
-      <input type="text" id="search-input" placeholder="名前・説明欄を検索..." />
+      <input type="text" id="search-input" placeholder="名前・本文・説明欄を検索..." />
       <select id="date-filter">
         <option value="all">全期間</option>
         <option value="7">過去1週間</option>
@@ -192,7 +197,7 @@
   </header>
 
   <div id="workspace">
-    <!-- ほわんとした接続線用のSVG -->
+    <!-- トーナメント分岐線を描画するSVGキャンバス -->
     <svg id="connector-svg"></svg>
 
     <div id="tournament-container">
@@ -214,12 +219,10 @@
 
     <!-- ここに階層（第2ラウンド、第3ラウンド...）が動的に追加されます -->
   </div>
-
-    
 <script>
     const CLIENT_ID = '554521661384-kpp41s620jutab56eu2qi0b7bcbrfgl6.apps.googleusercontent.com';
     let accessToken = null;
-    let selectedPath = []; // 選択中のノードの履歴（SVG線を描画するため）
+    let selectedPath = []; // 選択したカードの配列
 
     document.getElementById('login-btn').addEventListener('click', () => {
       const tokenClient = google.accounts.oauth2.initTokenClient({
@@ -260,7 +263,6 @@
         renderNextRound(items, roundIndex);
         document.getElementById('status').innerText = `解析完了 (${items.length} 件)`;
         
-        // 描画後にSVGラインを再計算
         setTimeout(drawConnectors, 50);
       } catch (err) {
         console.error(err);
@@ -291,7 +293,6 @@
           `;
 
           card.addEventListener('click', () => {
-            // パス履歴を更新（SVG描画用）
             selectedPath = selectedPath.slice(0, roundIndex);
             selectedPath.push(card);
 
@@ -312,52 +313,93 @@
       container.appendChild(column);
     }
 
-    // 選択されたカードから次の列へ「ほわん」とした接続線を描画
+    // 【★新機能】スケッチどおりのトーナメント（樹形図）分岐線を描画する関数
     function drawConnectors() {
       const svg = document.getElementById('connector-svg');
       const workspace = document.getElementById('workspace');
-      svg.innerHTML = ''; // クリア
+      svg.innerHTML = '';
 
-      // Workspaceの全領域サイズにSVGを調整
       svg.setAttribute('width', workspace.scrollWidth);
       svg.setAttribute('height', workspace.scrollHeight);
 
-      for (let i = 0; i < selectedPath.length - 1; i++) {
-        const parent = selectedPath[i];
+      for (let i = 0; i < selectedPath.length; i++) {
+        const parentCard = selectedPath[i];
         const nextRoundCol = document.getElementById(`round-${i + 1}`);
-        if (!parent || !nextRoundCol) continue;
+        if (!parentCard || !nextRoundCol) continue;
 
-        const pRect = parent.getBoundingClientRect();
+        const pRect = parentCard.getBoundingClientRect();
         const wRect = workspace.getBoundingClientRect();
 
-        // 親カードの右端中央の座標
+        // 1. 親カードの「右端中央」の座標
         const startX = pRect.right - wRect.left + workspace.scrollLeft;
         const startY = pRect.top + pRect.height / 2 - wRect.top + workspace.scrollTop;
 
-        // 次のカラム内にある子ノード（またはカラム中央）に向けて曲線をひく
-        const childCards = nextRoundCol.querySelectorAll('.node-card');
+        const childCards = Array.from(nextRoundCol.querySelectorAll('.node-card'));
+        if (childCards.length === 0) continue;
+
+        // 子要素全体のY座標の範囲を取得
+        const childYs = childCards.map(c => {
+          const cr = c.getBoundingClientRect();
+          return cr.top + cr.height / 2 - wRect.top + workspace.scrollTop;
+        });
+
+        const minChildY = Math.min(...childYs);
+        const maxChildY = Math.max(...childYs);
+
+        // 分岐の縦線（幹）を配置するX座標（親と子のちょうど真ん中）
+        const firstChildRect = childCards[0].getBoundingClientRect();
+        const firstChildX = firstChildRect.left - wRect.left + workspace.scrollLeft;
+        const midX = startX + (firstChildX - startX) / 2;
+
+        const isNextSelected = selectedPath[i + 1];
+
+        // --- A. 親から縦幹までの「横線」 ---
+        const parentLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        parentLine.setAttribute('x1', startX);
+        parentLine.setAttribute('y1', startY);
+        parentLine.setAttribute('x2', midX);
+        parentLine.setAttribute('y2', startY);
+        // 次の階層で何か選択されていれば黒、まだならグレー
+        parentLine.setAttribute('class', `line-default ${isNextSelected ? 'line-active' : ''}`);
+        svg.appendChild(parentLine);
+
+        // --- B. 縦の「幹」線 ---
+        const verticalLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        verticalLine.setAttribute('x1', midX);
+        verticalLine.setAttribute('y1', minChildY);
+        verticalLine.setAttribute('x2', midX);
+        verticalLine.setAttribute('y2', maxChildY);
+        verticalLine.setAttribute('class', 'line-default');
+        svg.appendChild(verticalLine);
+
+        // --- C. 幹から各子ノードへの「横線」 ---
         childCards.forEach(child => {
           const cRect = child.getBoundingClientRect();
-          // 子カードの左端中央の座標
-          const endX = cRect.left - wRect.left + workspace.scrollLeft;
-          const endY = cRect.top + cRect.height / 2 - wRect.top + workspace.scrollTop;
+          const childX = cRect.left - wRect.left + workspace.scrollLeft;
+          const childY = cRect.top + cRect.height / 2 - wRect.top + workspace.scrollTop;
 
-          // ベジェ曲線の制御点（ほわんとした曲がり具合）
-          const dx = (endX - startX) * 0.5;
-          const pathD = `M ${startX} ${startY} C ${startX + dx} ${startY}, ${endX - dx} ${endY}, ${endX} ${endY}`;
+          const childLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+          childLine.setAttribute('x1', midX);
+          childLine.setAttribute('y1', childY);
+          childLine.setAttribute('x2', childX);
+          childLine.setAttribute('y2', childY);
 
-          const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-          path.setAttribute('d', pathD);
-          path.setAttribute('class', 'path-line');
-          
-          // 選択されたルートの場合は線を強調
-          if (selectedPath[i + 1] === child) {
-            path.style.stroke = '#8b5cf6';
-            path.style.strokeWidth = '4';
-            path.style.opacity = '1';
+          // この子が選択されているアイテムなら「黒」でハイライト
+          const isThisChildSelected = (selectedPath[i + 1] === child);
+          childLine.setAttribute('class', `line-default ${isThisChildSelected ? 'line-active' : ''}`);
+
+          svg.appendChild(childLine);
+
+          // もしこの子が選択中なら、縦幹の一部（親のYからこの子のYまで）も黒く塗る
+          if (isThisChildSelected) {
+            const activeVert = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            activeVert.setAttribute('x1', midX);
+            activeVert.setAttribute('y1', startY);
+            activeVert.setAttribute('x2', midX);
+            activeVert.setAttribute('y2', childY);
+            activeVert.setAttribute('class', 'line-default line-active');
+            svg.appendChild(activeVert);
           }
-
-          svg.appendChild(path);
         });
       }
     }
@@ -367,15 +409,15 @@
       const keyword = document.getElementById('search-input').value.trim();
       const days = document.getElementById('date-filter').value;
 
-      if (!accessToken) { alert('ログインしてください'); return; }
-      if (!keyword && days === 'all') { alert('検索キーワードまたはフィルターを指定してください'); return; }
+      if (!accessToken) { alert('Googleでログインしてください'); return; }
+      if (!keyword && days === 'all') { alert('検索キーワードまたは期間を指定してください'); return; }
 
-      document.getElementById('status').innerText = 'メタデータ検索中...';
+      document.getElementById('status').innerText = '検索中...';
 
-      // Drive APIの fullText ＋ description ＋ modifiedTime 条件構築
       let queryParts = ["trashed = false"];
       if (keyword) {
-        queryParts.push(`(name contains '${keyword}' or description contains '${keyword}')`);
+        const escapedKeyword = keyword.replace(/['\\]/g, '\\$&');
+        queryParts.push(`(name contains '${escapedKeyword}' or description contains '${escapedKeyword}' or fullText contains '${escapedKeyword}')`);
       }
       if (days !== 'all') {
         const date = new Date();
@@ -387,7 +429,7 @@
 
       try {
         const res = await fetch(
-          `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,name,mimeType,description,modifiedTime,parents,webViewLink)&supportsAllDrives=true&includeItemsFromAllDrives=true&pageSize=20`,
+          `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,name,mimeType,description,modifiedTime,parents,webViewLink)&supportsAllDrives=true&includeItemsFromAllDrives=true&pageSize=30`,
           { headers: { Authorization: `Bearer ${accessToken}` } }
         );
         const data = await res.json();
@@ -395,15 +437,64 @@
 
         if (results.length === 0) {
           alert('該当するファイルが見つかりませんでした');
-        } else {
-          alert(`検索ヒット: ${results.length} 件\n最上部の「${results[0].name}」を開きます`);
-          window.open(results[0].webViewLink, '_blank');
+          document.getElementById('status').innerText = '該当なし';
+          return;
         }
-        document.getElementById('status').innerText = '';
+
+        renderSearchResults(results, keyword);
+        document.getElementById('status').innerText = `ヒット: ${results.length} 件`;
       } catch (err) {
         console.error(err);
-        document.getElementById('status').innerText = '検索エラー';
+        document.getElementById('status').innerText = '検索エラーが発生しました';
       }
+    }
+
+    function renderSearchResults(items, keyword) {
+      const container = document.getElementById('tournament-container');
+      const existingSearchCol = document.getElementById('round-search');
+      if (existingSearchCol) existingSearchCol.remove();
+
+      const column = document.createElement('div');
+      column.className = 'round-column';
+      column.id = 'round-search';
+
+      const header = document.createElement('div');
+      header.style.fontSize = '12px';
+      header.style.fontWeight = 'bold';
+      header.style.color = '#0f172a';
+      header.innerText = `🔍 「${keyword}」の検索結果 (${items.length}件)`;
+      column.appendChild(header);
+
+      items.forEach(item => {
+        const isFolder = item.mimeType === 'application/vnd.google-apps.folder';
+        const card = document.createElement('div');
+        card.className = 'node-card';
+        
+        const iconSrc = isFolder ? 'image/folder.png' : 'image/file.png';
+        const dateStr = item.modifiedTime ? new Date(item.modifiedTime).toLocaleDateString() : '';
+        
+        card.innerHTML = `
+          <img src="${iconSrc}" class="icon-img" alt="icon" />
+          <div style="display:flex; flex-direction:column; overflow:hidden;">
+            <span class="title" title="${item.name}">${item.name}</span>
+            <span style="font-size:10px; color:#94a3b8;">${dateStr}</span>
+          </div>
+        `;
+
+        card.addEventListener('click', () => {
+          highlightSelection(card);
+          if (isFolder) {
+            loadChildNodes(item.id, 1);
+          } else {
+            window.open(item.webViewLink, '_blank');
+          }
+        });
+
+        column.appendChild(card);
+      });
+
+      container.appendChild(column);
+      column.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
     function highlightSelection(element) {
@@ -422,7 +513,6 @@
       drawConnectors();
     }
 
-    // ウィンドウリサイズ時にもSVG位置を自動再調整
     window.addEventListener('resize', drawConnectors);
   </script>
 </body>
