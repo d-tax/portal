@@ -1,115 +1,153 @@
+<!-- 554521661384-kpp41s620jutab56eu2qi0b7bcbrfgl6.apps.googleusercontent.com -->
+
 <!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>Drive Column Browser</title>
+  <title>Soft Tournament Drive Map</title>
   <style>
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background-color: #1e1e1e;
-      color: #ccc;
-      height: 100vh;
+      padding: 0;
+      font-family: "Hiragino Sans", "Meiryo", sans-serif;
+      background: linear-gradient(135deg, #f0f4f8 0%, #e8eef5 100%);
+      color: #4a5568;
+      min-height: 100vh;
       display: flex;
       flex-direction: column;
     }
+
+    /* ヘッダー */
     header {
-      padding: 12px 20px;
-      background-color: #252526;
-      border-bottom: 1px solid #3c3c3c;
+      padding: 16px 24px;
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(10px);
+      border-bottom: 2px solid #e2e8f0;
       display: flex;
-      align-items: center;
       justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.03);
     }
-    button {
-      padding: 6px 14px;
-      background-color: #0e639c;
+    h1 { font-size: 18px; margin: 0; color: #2d3748; font-weight: 600; }
+
+    /* ボタン類 (やわらかいデザイン) */
+    .btn {
+      padding: 8px 18px;
+      background: #7c3aed;
       color: white;
       border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    button:disabled { background-color: #555; cursor: not-allowed; }
-
-    /* Macファインダー風 カラムコンテナ */
-    #columns-container {
-      flex: 1;
-      display: flex;
-      overflow-x: auto;
-      background-color: #1e1e1e;
-    }
-    .column {
-      min-width: 240px;
-      width: 240px;
-      border-right: 1px solid #3c3c3c;
-      overflow-y: auto;
-      background-color: #252526;
-      flex-shrink: 0;
-    }
-    .item {
-      padding: 8px 12px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+      border-radius: 20px;
       cursor: pointer;
       font-size: 13px;
-      user-select: none;
-      border-bottom: 1px solid #2d2d2d;
+      font-weight: 500;
+      box-shadow: 0 4px 10px rgba(124, 58, 237, 0.2);
+      transition: all 0.3s ease;
     }
-    .item:hover { background-color: #2a2d2e; }
-    .item.selected { background-color: #094771; color: white; }
-    .item-name {
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(124, 58, 237, 0.3); }
+
+    /* トーナメント表示エリア */
+    #tournament-container {
+      flex: 1;
+      display: flex;
+      padding: 40px;
+      overflow-x: auto;
+      align-items: center;
+      gap: 60px; /* カラム間の間隔 */
+    }
+
+    /* ラウンド（階層）カラム */
+    .round-column {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-around;
+      min-width: 220px;
+      height: 100%;
+      gap: 20px;
+    }
+
+    /* トーナメントカード（ノード） */
+    .node-card {
+      background: #ffffff;
+      padding: 12px 16px;
+      border-radius: 16px;
+      box-shadow: 0 8px 20px rgba(149, 157, 165, 0.1);
+      border: 2px solid #edf2f7;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .node-card:hover {
+      transform: scale(1.04);
+      border-color: #a78bfa;
+      box-shadow: 0 12px 25px rgba(167, 139, 250, 0.25);
+    }
+    .node-card.selected {
+      background: #f3e8ff;
+      border-color: #8b5cf6;
+      color: #6d28d9;
+      font-weight: bold;
+    }
+
+    /* アイコン画像用スタイル */
+    .icon-img {
+      width: 24px;
+      height: 24px;
+      object-fit: contain;
+      flex-shrink: 0;
+    }
+
+    /* ドライブ用の特別カード色 */
+    .node-card.drive-a { border-left: 6px solid #f472b6; } /* パステルピンク */
+    .node-card.drive-b { border-left: 6px solid #38bdf8; } /* パステルブルー */
+    .node-card.drive-c { border-left: 6px solid #34d399; } /* パステルグリーン */
+
+    .title {
+      font-size: 13px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      flex: 1;
-      margin-right: 8px;
-    }
-    .arrow { font-size: 10px; color: #888; }
-    .item.selected .arrow { color: white; }
-
-    /* プレビュー・詳細エリア */
-    .preview-panel {
-      min-width: 280px;
-      padding: 20px;
-      background-color: #1e1e1e;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      font-size: 13px;
-    }
-    .preview-title { font-weight: bold; font-size: 16px; word-break: break-all; color: #fff; }
-    .open-link {
-      display: inline-block;
-      margin-top: 10px;
-      color: #3794ff;
-      text-decoration: none;
+      max-width: 140px;
     }
   </style>
-
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
 
   <header>
-    <h3 style="margin:0; font-size:16px;">Drive Column Browser</h3>
+    <h1> Soft Drive Tournament</h1>
     <div>
-      <button id="login-btn">Googleでログイン</button>
-      <span id="status" style="margin-left: 10px; font-size: 12px;"></span>
+      <button id="login-btn" class="btn">Googleでログイン</button>
+      <span id="status" style="margin-left: 10px; font-size: 12px; color: #718096;"></span>
     </div>
   </header>
 
-  <div id="columns-container">
-    <!-- カラムがここに動的追加されます -->
+  <div id="tournament-container">
+    <!-- 第1ラウンド: 3つの共有フォルダ/ドライブ -->
+    <div class="round-column" id="round-0">
+      <div class="node-card drive-a" onclick="selectDrive('0AFuy2E2OGEvyUk9PVA', '共有ドライブ A', this)">
+        <img src="image/folder.png" class="icon-img" alt="folder" />
+        <span class="title">本部管理</span>
+      </div>
+      <div class="node-card drive-b" onclick="selectDrive('0ALkBF3CxaFy_Uk9PVA', '共有ドライブ B', this)">
+        <img src="image/folder.png" class="icon-img" alt="folder" />
+        <span class="title">法人クライアント</span>
+      </div>
+      <div class="node-card drive-c" onclick="selectDrive('0ACErmC2osz2KUk9PVA', '共有ドライブ C', this)">
+        <img src="image/folder.png" class="icon-img" alt="folder" />
+        <span class="title">個人クライアント</span>
+      </div>
+    </div>
+
+    <!-- ここに階層（第2ラウンド、第3ラウンド...）が動的に追加されます -->
   </div>
 
   <script>
-    // ★ Step 1で取得した CLIENT_ID を貼り付けてください
     const CLIENT_ID = '554521661384-kpp41s620jutab56eu2qi0b7bcbrfgl6.apps.googleusercontent.com';
-
     let accessToken = null;
-    let columnsData = []; // 各カラムの情報を保持
 
     document.getElementById('login-btn').addEventListener('click', () => {
       const tokenClient = google.accounts.oauth2.initTokenClient({
@@ -118,94 +156,103 @@
         callback: async (response) => {
           if (response.access_token) {
             accessToken = response.access_token;
-            document.getElementById('status').innerText = '接続成功';
-            // ルートフォルダ（マイドライブ）から読み込み開始
-            loadColumn('root', 0);
+            document.getElementById('status').innerText = '準備完了！ドライブを選択してください';
           }
         },
       });
       tokenClient.requestAccessToken();
     });
 
-    // 指定フォルダ直下のファイル/フォルダを取得してカラムに追加
-    async function loadColumn(folderId, columnIndex) {
-      document.getElementById('status').innerText = '読み込み中...';
+    // ドライブ（http://A, B, C）を選択したときの処理
+    async function selectDrive(driveId, name, element) {
+      if (!accessToken) {
+        alert('先にGoogleでログインしてください！');
+        return;
+      }
+      highlightSelection(element);
+      // ドライブ直下のフォルダを解析して第2ラウンドへ展開
+      await loadChildNodes(driveId, 1, true);
+    }
+
+    // 子フォルダ・ファイルを解析して次のラウンド（カラム）を追加
+    async function loadChildNodes(parentId, roundIndex, isDrive = false) {
+      document.getElementById('status').innerText = 'フォルダを解析中...';
       
-      // 指定した深度より右側のカラムを削除
-      columnsData = columnsData.slice(0, columnIndex);
-      renderColumns();
+      // 選択したラウンド以降のカラムをクリア
+      clearRoundsFrom(roundIndex);
 
       try {
-        const query = `'${folderId}' in parents and trashed = false`;
+        // フォルダ直下（または共有ドライブ直下）のデータを取得
+        const query = `'${parentId}' in parents and trashed = false`;
         const res = await fetch(
-          `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=files(id,name,mimeType,size,modifiedTime,webViewLink)&pageSize=100&orderBy=folder,name`,
+          `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=files(id,name,mimeType,webViewLink)&supportsAllDrives=true&includeItemsFromAllDrives=true&pageSize=50`,
           { headers: { Authorization: `Bearer ${accessToken}` } }
         );
         const data = await res.json();
-        const files = data.files || [];
+        const items = data.files || [];
 
-        columnsData[columnIndex] = { folderId, files, selectedId: null };
-        renderColumns();
-        document.getElementById('status').innerText = '';
+        renderNextRound(items, roundIndex);
+        document.getElementById('status').innerText = `解析完了 (${items.length} 件)`;
       } catch (err) {
         console.error(err);
-        document.getElementById('status').innerText = '取得エラー';
+        document.getElementById('status').innerText = '解析エラー';
       }
     }
 
-    // カラム群を描画
-    function renderColumns() {
-      const container = document.getElementById('columns-container');
-      container.innerHTML = '';
+    // 解析結果をトーナメントの次の列として描画
+    function renderNextRound(items, roundIndex) {
+      const container = document.getElementById('tournament-container');
+      
+      const column = document.createElement('div');
+      column.className = 'round-column';
+      column.id = `round-${roundIndex}`;
 
-      columnsData.forEach((col, colIdx) => {
-        const colEl = document.createElement('div');
-        colEl.className = 'column';
-
-        col.files.forEach(file => {
-          const isFolder = file.mimeType === 'application/vnd.google-apps.folder';
-          const itemEl = document.createElement('div');
-          itemEl.className = `item ${col.selectedId === file.id ? 'selected' : ''}`;
+      if (items.length === 0) {
+        column.innerHTML = '<div style="font-size:12px; color:#a0aec0;">(中身は空です)</div>';
+      } else {
+        items.forEach(item => {
+          const isFolder = item.mimeType === 'application/vnd.google-apps.folder';
+          const card = document.createElement('div');
+          card.className = 'node-card';
           
-          itemEl.innerHTML = `
-            <span class="item-name">${isFolder ? '📁' : '📄'} ${file.name}</span>
-            ${isFolder ? '<span class="arrow">▶</span>' : ''}
+          // カスタム画像アイコン (image/folder.png と image/file.png) を使用
+          const iconSrc = isFolder ? 'image/folder.png' : 'image/file.png';
+          
+          card.innerHTML = `
+            <img src="${iconSrc}" class="icon-img" alt="${isFolder ? 'folder' : 'file'}" />
+            <span class="title">${item.name}</span>
           `;
 
-          itemEl.addEventListener('click', () => {
-            col.selectedId = file.id;
+          card.addEventListener('click', () => {
+            highlightSelection(card);
             if (isFolder) {
-              loadColumn(file.id, colIdx + 1);
+              loadChildNodes(item.id, roundIndex + 1);
             } else {
-              // ファイルの場合はプレビューを表示
-              showPreview(file, colIdx + 1);
+              // ファイルの場合は新しいタブでGoogle Driveを開く
+              window.open(item.webViewLink, '_blank');
             }
-            renderColumns();
           });
 
-          colEl.appendChild(itemEl);
+          column.appendChild(card);
         });
+      }
 
-        container.appendChild(colEl);
-      });
+      container.appendChild(column);
     }
 
-    // 最右カラムにファイル詳細を表示
-    function showPreview(file, columnIndex) {
-      columnsData = columnsData.slice(0, columnIndex);
-      
-      const container = document.getElementById('columns-container');
-      renderColumns();
+    function highlightSelection(element) {
+      const parentColumn = element.parentElement;
+      Array.from(parentColumn.children).forEach(child => child.classList.remove('selected'));
+      element.classList.add('selected');
+    }
 
-      const previewEl = document.createElement('div');
-      previewEl.className = 'preview-panel';
-      previewEl.innerHTML = `
-        <div class="preview-title">${file.name}</div>
-        <div><strong>更新日:</strong> ${new Date(file.modifiedTime).toLocaleString()}</div>
-        ${file.size ? `<div><strong>サイズ:</strong> ${(file.size / 1024 / 1024).toFixed(2)} MB</div>` : ''}
-        <a class="open-link" href="${file.webViewLink}" target="_blank">Google Driveで開く ↗</a>
-      `;
-      container.appendChild(previewEl);
+    function clearRoundsFrom(roundIndex) {
+      const container = document.getElementById('tournament-container');
+      let i = roundIndex;
+      while (document.getElementById(`round-${i}`)) {
+        container.removeChild(document.getElementById(`round-${i}`));
+        i++;
+      }
     }
   </script>
 </body>
