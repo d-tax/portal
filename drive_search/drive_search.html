@@ -314,6 +314,7 @@
     }
 
     // 【★新機能】スケッチどおりのトーナメント（樹形図）分岐線を描画する関数
+    // 【修正版】選択したフォルダから正確に分岐を伸ばす描画関数
     function drawConnectors() {
       const svg = document.getElementById('connector-svg');
       const workspace = document.getElementById('workspace');
@@ -330,40 +331,41 @@
         const pRect = parentCard.getBoundingClientRect();
         const wRect = workspace.getBoundingClientRect();
 
-        // 1. 親カードの「右端中央」の座標
+        // 1. 選択された親カードの「右端中央」の正確な座標
         const startX = pRect.right - wRect.left + workspace.scrollLeft;
         const startY = pRect.top + pRect.height / 2 - wRect.top + workspace.scrollTop;
 
         const childCards = Array.from(nextRoundCol.querySelectorAll('.node-card'));
         if (childCards.length === 0) continue;
 
-        // 子要素全体のY座標の範囲を取得
+        // 子要素カードそれぞれのY座標リストを取得
         const childYs = childCards.map(c => {
           const cr = c.getBoundingClientRect();
           return cr.top + cr.height / 2 - wRect.top + workspace.scrollTop;
         });
 
-        const minChildY = Math.min(...childYs);
-        const maxChildY = Math.max(...childYs);
+        // 縦幹の最上部・最下部（親のY座標も考慮して分岐線が途切れないようにする）
+        const minChildY = Math.min(...childYs, startY);
+        const maxChildY = Math.max(...childYs, startY);
 
-        // 分岐の縦線（幹）を配置するX座標（親と子のちょうど真ん中）
+        // 分岐の縦線（幹）を配置するX座標（親の右端と子要素の左端の中間）
         const firstChildRect = childCards[0].getBoundingClientRect();
         const firstChildX = firstChildRect.left - wRect.left + workspace.scrollLeft;
         const midX = startX + (firstChildX - startX) / 2;
 
         const isNextSelected = selectedPath[i + 1];
 
-        // --- A. 親から縦幹までの「横線」 ---
+        // --- A. 親カードの右端から縦幹（midX, startY）までの「主横線」 ---
         const parentLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
         parentLine.setAttribute('x1', startX);
         parentLine.setAttribute('y1', startY);
         parentLine.setAttribute('x2', midX);
         parentLine.setAttribute('y2', startY);
-        // 次の階層で何か選択されていれば黒、まだならグレー
+        // 選択されたルートは黒、未選択ルートはグレー
         parentLine.setAttribute('class', `line-default ${isNextSelected ? 'line-active' : ''}`);
         svg.appendChild(parentLine);
 
-        // --- B. 縦の「幹」線 ---
+        // --- B. 全体をカバーする「縦の幹」線（薄いグレー） ---
         const verticalLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
         verticalLine.setAttribute('x1', midX);
         verticalLine.setAttribute('y1', minChildY);
@@ -372,25 +374,24 @@
         verticalLine.setAttribute('class', 'line-default');
         svg.appendChild(verticalLine);
 
-        // --- C. 幹から各子ノードへの「横線」 ---
+        // --- C. 幹から各子ノードへの「分岐横線」 ---
         childCards.forEach(child => {
           const cRect = child.getBoundingClientRect();
           const childX = cRect.left - wRect.left + workspace.scrollLeft;
           const childY = cRect.top + cRect.height / 2 - wRect.top + workspace.scrollTop;
 
+          // 幹から各子要素へ伸びる横線
           const childLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
           childLine.setAttribute('x1', midX);
           childLine.setAttribute('y1', childY);
           childLine.setAttribute('x2', childX);
           childLine.setAttribute('y2', childY);
 
-          // この子が選択されているアイテムなら「黒」でハイライト
           const isThisChildSelected = (selectedPath[i + 1] === child);
           childLine.setAttribute('class', `line-default ${isThisChildSelected ? 'line-active' : ''}`);
-
           svg.appendChild(childLine);
 
-          // もしこの子が選択中なら、縦幹の一部（親のYからこの子のYまで）も黒く塗る
+          // もしこの子が選択中なら、親の高さ(startY)からこの子の高さ(childY)までの「縦線」を黒く塗る
           if (isThisChildSelected) {
             const activeVert = document.createElementNS('http://www.w3.org/2000/svg', 'line');
             activeVert.setAttribute('x1', midX);
