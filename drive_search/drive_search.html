@@ -103,9 +103,10 @@
     .round-column {
       display: flex;
       flex-direction: column;
-      justify-content: center;
       min-width: 220px;
       gap: 20px;
+      position: relative; /* 位置調整用に追記 */
+      align-self: flex-start; /* 上揃えに変更 */
     }
 
     /* トーナメントカード（ノード） */
@@ -270,7 +271,7 @@
       }
     }
 
-    // 次のラウンド描画
+    // 次のラウンド描画（選択フォルダの高さを中心に配置する修正版）
     function renderNextRound(items, roundIndex) {
       const container = document.getElementById('tournament-container');
       const column = document.createElement('div');
@@ -278,7 +279,7 @@
       column.id = `round-${roundIndex}`;
 
       if (items.length === 0) {
-        column.innerHTML = '<div style="font-size:12px; color:#a0aec0;">(空です)</div>';
+        column.innerHTML = '<div style="font-size:12px; color:#a0aec0; padding:10px;">(空です)</div>';
       } else {
         items.forEach(item => {
           const isFolder = item.mimeType === 'application/vnd.google-apps.folder';
@@ -311,8 +312,119 @@
       }
 
       container.appendChild(column);
+
+      // 【★核心部分】親フォルダの高さ位置を中心として子カラムの位置（marginTop）を調整
+      adjustColumnPosition(roundIndex);
     }
 
+    // 選択フォルダの位置に合わせて子カラムのY位置をあわせる関数
+    function adjustColumnPosition(roundIndex) {
+      const parentCard = selectedPath[roundIndex - 1];
+      const childCol = document.getElementById(`round-${roundIndex}`);
+      if (!parentCard || !childCol) return;
+
+      const workspace = document.getElementById('workspace');
+      const wRect = workspace.getBoundingClientRect();
+      const pRect = parentCard.getBoundingClientRect();
+
+      // 親カードの中心Y座標（ワークスペース基準）
+      const parentCenterY = pRect.top + pRect.height / 2 - wRect.top + workspace.scrollTop;
+
+      // 子カラム要素自体の高さ
+      const childColHeight = childCol.offsetHeight;
+
+      // 子カラムの中心が親カードの中心と一致するように marginTop を設定
+      // （マイナス値にならないよう 0 以上に制限）
+      const targetMarginTop = Math.max(0, parentCenterY - childColHeight / 2);
+      childCol.style.marginTop = `${targetMarginTop}px`;
+    }
+
+    // 接続線の再描画（レイアウト確定後に線を正しく結ぶ）
+    function drawConnectors() {
+      const svg = document.getElementById('connector-svg');
+      const workspace = document.getElementById('workspace');
+      svg.innerHTML = '';
+
+      svg.setAttribute('width', workspace.scrollWidth);
+      svg.setAttribute('height', workspace.scrollHeight);
+
+      for (let i = 0; i < selectedPath.length; i++) {
+        const parentCard = selectedPath[i];
+        const nextRoundCol = document.getElementById(`round-${i + 1}`);
+        if (!parentCard || !nextRoundCol) continue;
+
+        // 位置のズレを防止するため、描画前にもカラム位置を再計算
+        adjustColumnPosition(i + 1);
+
+        const pRect = parentCard.getBoundingClientRect();
+        const wRect = workspace.getBoundingClientRect();
+
+        const startX = pRect.right - wRect.left + workspace.scrollLeft;
+        const startY = pRect.top + pRect.height / 2 - wRect.top + workspace.scrollTop;
+
+        const childCards = Array.from(nextRoundCol.querySelectorAll('.node-card'));
+        if (childCards.length === 0) continue;
+
+        const childYs = childCards.map(c => {
+          const cr = c.getBoundingClientRect();
+          return cr.top + cr.height / 2 - wRect.top + workspace.scrollTop;
+        });
+
+        const minChildY = Math.min(...childYs, startY);
+        const maxChildY = Math.max(...childYs, startY);
+
+        const firstChildRect = childCards[0].getBoundingClientRect();
+        const firstChildX = firstChildRect.left - wRect.left + workspace.scrollLeft;
+        const midX = startX + (firstChildX - startX) / 2;
+
+        const isNextSelected = selectedPath[i + 1];
+
+        // A. 親からの主横線（まっすぐ伸びる）
+        const parentLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        parentLine.setAttribute('x1', startX);
+        parentLine.setAttribute('y1', startY);
+        parentLine.setAttribute('x2', midX);
+        parentLine.setAttribute('y2', startY);
+        parentLine.setAttribute('class', `line-default ${isNextSelected ? 'line-active' : ''}`);
+        svg.appendChild(parentLine);
+
+        // B. 縦の幹
+        const verticalLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        verticalLine.setAttribute('x1', midX);
+        verticalLine.setAttribute('y1', minChildY);
+        verticalLine.setAttribute('x2', midX);
+        verticalLine.setAttribute('y2', maxChildY);
+        verticalLine.setAttribute('class', 'line-default');
+        svg.appendChild(verticalLine);
+
+        // C. 各子要素への横線
+        childCards.forEach(child => {
+          const cRect = child.getBoundingClientRect();
+          const childX = cRect.left - wRect.left + workspace.scrollLeft;
+          const childY = cRect.top + cRect.height / 2 - wRect.top + workspace.scrollTop;
+
+          const childLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+          childLine.setAttribute('x1', midX);
+          childLine.setAttribute('y1', childY);
+          childLine.setAttribute('x2', childX);
+          childLine.setAttribute('y2', childY);
+
+          const isThisChildSelected = (selectedPath[i + 1] === child);
+          childLine.setAttribute('class', `line-default ${isThisChildSelected ? 'line-active' : ''}`);
+          svg.appendChild(childLine);
+
+          if (isThisChildSelected) {
+            const activeVert = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            activeVert.setAttribute('x1', midX);
+            activeVert.setAttribute('y1', startY);
+            activeVert.setAttribute('x2', midX);
+            activeVert.setAttribute('y2', childY);
+            activeVert.setAttribute('class', 'line-default line-active');
+            svg.appendChild(activeVert);
+          }
+        });
+      }
+    }
     // 【★新機能】スケッチどおりのトーナメント（樹形図）分岐線を描画する関数
     // 【修正版】選択したフォルダから正確に分岐を伸ばす描画関数
     function drawConnectors() {
