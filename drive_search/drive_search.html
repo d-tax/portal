@@ -1,77 +1,106 @@
-
-
 <!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>Soft Drive Map with Gemini</title>
+  <title>Soft Drive Map with Aurora Glass UI</title>
   <style>
     * { box-sizing: border-box; }
+
+    /* 背景：Gemini風のオーロラグラデーション（極微小・邪魔しないアニメーション） */
     body {
       margin: 0;
       padding: 0;
-      font-family: "Hiragino Sans", "Meiryo", sans-serif;
-      background: linear-gradient(135deg, #f0f4f8 0%, #e8eef5 100%);
-      color: #4a5568;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+      color: #1e293b;
       height: 100vh;
       display: flex;
       flex-direction: column;
       overflow: hidden;
+      background: linear-gradient(-45deg, #e0f2fe, #f3e8ff, #fce7f3, #e0e7ff);
+      background-size: 400% 400%;
+      animation: aurora 25s ease infinite;
     }
 
-    /* 1. スクロール固定ヘッダー */
+    @keyframes aurora {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    /* ヘッダー：グラスモーフィズム */
     header {
       position: sticky;
       top: 0;
-      padding: 12px 24px;
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(10px);
-      border-bottom: 2px solid #e2e8f0;
+      padding: 14px 28px;
+      background: rgba(255, 255, 255, 0.45);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.6);
       display: flex;
       justify-content: space-between;
       align-items: center;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
       z-index: 1000;
-      gap: 15px;
+      gap: 20px;
     }
-    h1 { font-size: 18px; margin: 0; color: #2d3748; font-weight: 600; white-space: nowrap; }
+
+    h1 {
+      font-size: 18px;
+      margin: 0;
+      font-weight: 700;
+      background: linear-gradient(135deg, #4f46e5, #9333ea);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      white-space: nowrap;
+    }
 
     .search-bar {
       display: flex;
       align-items: center;
       gap: 10px;
-      background: #f1f5f9;
-      padding: 6px 14px;
-      border-radius: 20px;
-      border: 1px solid #cbd5e1;
+      background: rgba(255, 255, 255, 0.6);
+      backdrop-filter: blur(10px);
+      padding: 8px 18px;
+      border-radius: 30px;
+      border: 1px solid rgba(255, 255, 255, 0.8);
       flex: 1;
-      max-width: 500px;
+      max-width: 550px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+      transition: all 0.3s ease;
+    }
+    .search-bar:focus-within {
+      background: rgba(255, 255, 255, 0.85);
+      box-shadow: 0 4px 20px rgba(124, 58, 237, 0.15);
+      border-color: rgba(168, 85, 247, 0.4);
     }
     .search-bar input {
       border: none;
       background: transparent;
       outline: none;
-      font-size: 13px;
-      color: #334155;
+      font-size: 13.5px;
+      color: #1e293b;
       width: 100%;
     }
 
     .btn {
-      padding: 8px 18px;
-      background: #7c3aed;
+      padding: 8px 20px;
+      background: linear-gradient(135deg, #6366f1, #a855f7);
       color: white;
       border: none;
-      border-radius: 20px;
+      border-radius: 30px;
       cursor: pointer;
       font-size: 13px;
-      font-weight: 500;
-      box-shadow: 0 4px 10px rgba(124, 58, 237, 0.2);
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(124, 58, 237, 0.25);
       transition: all 0.3s ease;
       white-space: nowrap;
     }
-    .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(124, 58, 237, 0.3); }
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(124, 58, 237, 0.35);
+    }
 
-    /* メインエリア */
+    /* レイアウトエリア */
     #main-wrapper {
       display: flex;
       flex: 1;
@@ -86,7 +115,6 @@
       overflow: auto;
     }
 
-    /* SVG接続線キャンバス */
     #connector-svg {
       position: absolute;
       top: 0;
@@ -97,37 +125,37 @@
       z-index: 1;
     }
 
-    /* トーナメント表示エリア */
     #tournament-container {
       position: relative;
       z-index: 2;
       display: flex;
       padding: 40px;
-      gap: 80px;
+      gap: 70px;
       min-height: 100%;
       align-items: flex-start;
     }
 
-    /* 階層カラム */
     .round-column {
       display: flex;
       flex-direction: column;
-      min-width: 220px;
-      gap: 16px;
+      min-width: 210px;
+      gap: 14px;
       position: relative;
       align-self: flex-start;
       transition: margin-top 0.2s ease;
     }
 
-    /* ノードカード */
+    /* グラスモーフィズム・カード UI */
     .node-card {
-      background: #ffffff;
-      padding: 10px 16px;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(149, 157, 165, 0.08);
-      border: 2px solid #cbd5e1;
+      background: rgba(255, 255, 255, 0.55);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      padding: 12px 18px;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05);
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
       position: relative;
       display: flex;
       align-items: center;
@@ -135,27 +163,23 @@
       user-select: none;
     }
     .node-card:hover {
-      transform: scale(1.02);
-      border-color: #64748b;
+      transform: translateY(-2px) scale(1.02);
+      background: rgba(255, 255, 255, 0.75);
+      border-color: rgba(255, 255, 255, 1);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
     }
     .node-card.selected {
-      background: #ffffff;
-      border-color: #0f172a;
-      border-width: 2px;
+      background: rgba(255, 255, 255, 0.9);
+      border: 1.5px solid #6366f1;
       color: #0f172a;
-      font-weight: bold;
-      box-shadow: 0 6px 16px rgba(15, 23, 42, 0.15);
+      font-weight: 700;
+      box-shadow: 0 8px 25px rgba(99, 102, 241, 0.25);
     }
 
-    /* ドライブ色付け */
-    .node-card.drive-a { border-left: 6px solid #f472b6; }
-    .node-card.drive-b { border-left: 6px solid #38bdf8; }
-    .node-card.drive-c { border-left: 6px solid #34d399; }
-
-    .icon-img {
-      width: 22px;
-      height: 22px;
-      object-fit: contain;
+    /* フォルダ/ファイル アイコンスタイル */
+    .node-icon {
+      font-size: 20px;
+      line-height: 1;
       flex-shrink: 0;
     }
 
@@ -167,52 +191,54 @@
       max-width: 150px;
     }
 
-    /* SVG線スタイル */
+    /* SVG分岐線 */
     .line-default {
       fill: none;
-      stroke: #cbd5e1;
+      stroke: rgba(148, 163, 184, 0.4);
       stroke-width: 2;
       stroke-linejoin: round;
       stroke-linecap: round;
       transition: stroke 0.2s ease;
     }
     .line-active {
-      stroke: #0f172a !important;
+      stroke: #6366f1 !important;
       stroke-width: 2.5 !important;
     }
 
-    /* 2. 右側インラインファイルプレビュー */
+    /* 選択ファイルの右側に並ぶプレビューカード */
     .preview-column {
-      width: 500px;
-      height: 600px;
-      background: #ffffff;
-      border-radius: 12px;
-      border: 2px solid #0f172a;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+      width: 520px;
+      height: 620px;
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.9);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.08);
       display: flex;
       flex-direction: column;
       overflow: hidden;
       flex-shrink: 0;
     }
     .preview-header {
-      padding: 10px 16px;
-      background: #f8fafc;
-      border-bottom: 1px solid #e2e8f0;
+      padding: 12px 20px;
+      background: rgba(255, 255, 255, 0.5);
+      border-bottom: 1px solid rgba(226, 232, 240, 0.6);
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
     .preview-header h3 {
       margin: 0;
-      font-size: 13px;
-      color: #0f172a;
+      font-size: 13.5px;
+      color: #1e293b;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
     .preview-body {
       flex: 1;
-      background: #f1f5f9;
+      background: rgba(241, 245, 249, 0.5);
     }
     .preview-body iframe {
       width: 100%;
@@ -220,22 +246,20 @@
       border: none;
     }
   </style>
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
 
   <header>
-    <h1>🌸 Soft Drive Map</h1>
+    <h1>✨ Soft Drive Map</h1>
 
     <div class="search-bar">
       <span>🔍</span>
-      <input type="text" id="search-input" placeholder="選択中フォルダ内をAI検索..." onkeydown="if(event.key==='Enter') executeGeminiSearch()" />
-      <button class="btn" style="padding: 4px 12px; font-size: 12px;" onclick="executeGeminiSearch()">AI検索</button>
+      <input type="text" id="search-input" placeholder="選択中フォルダ内を爆速検索..." onkeydown="if(event.key==='Enter') executeFastSearch()" />
+      <button class="btn" style="padding: 5px 14px; font-size: 12px;" onclick="executeFastSearch()">検索</button>
     </div>
 
     <div>
-      <button id="login-btn" class="btn">Googleでログイン</button>
-      <span id="status" style="margin-left: 10px; font-size: 12px; color: #718096;"></span>
+      <span id="status" style="margin-left: 10px; font-size: 12px; color: #64748b; font-weight: 500;">インデックス読み込み中...</span>
     </div>
   </header>
 
@@ -243,6 +267,10 @@
     <div id="workspace">
       <svg id="connector-svg"></svg>
       <div id="tournament-container">
+
+
+
+        
 
 
 
@@ -274,71 +302,103 @@
 
 
 
-
-        <script>
-    const CLIENT_ID = '554521661384-kpp41s620jutab56eu2qi0b7bcbrfgl6.apps.googleusercontent.com';
-    // 3. Gemini API Keyをコード内に設定
+<script>
     const GEMINI_API_KEY = 'AQ.Ab8RN6JZMu5ZQa5PxTDq-cE3l64OZhx2-lptnkCD_4uxXvfYLw';
+    let driveDatabase = []; // ローカルインデックスDB
+    let selectedPath = [];  // パス管理
 
-    let accessToken = null;
-    let selectedPath = []; // 選択パス管理
-
-    document.getElementById('login-btn').addEventListener('click', () => {
-      const tokenClient = google.accounts.oauth2.initTokenClient({
-        client_id: CLIENT_ID,
-        scope: 'https://www.googleapis.com/auth/drive.readonly',
-        callback: async (response) => {
-          if (response.access_token) {
-            accessToken = response.access_token;
-            document.getElementById('status').innerText = '準備完了';
-          }
-        },
-      });
-      tokenClient.requestAccessToken();
+    // 起動時に簡易DB（JSON）を高速ロード
+    window.addEventListener('DOMContentLoaded', async () => {
+      try {
+        const res = await fetch('drive_index.json');
+        driveDatabase = await res.json();
+        document.getElementById('status').innerText = `準備完了 (${driveDatabase.length}件のDB)`;
+      } catch (e) {
+        console.warn('JSON DBが見つかりません。フォールバック動作を実行します。');
+        document.getElementById('status').innerText = 'DB非接続 (ローカル表示中)';
+      }
     });
 
     function selectDrive(driveId, driveName, element) {
-      if (!accessToken) { alert('Googleでログインしてください'); return; }
       handleFolderClick(driveId, driveName, element, 0);
     }
 
-    // 4. フォルダクリック処理（最終選択中の場合のみGoogle Driveへ飛ぶ）
+    // フォルダクリック制御（末端選択時のみDriveを開く）
     function handleFolderClick(folderId, folderName, element, roundIndex) {
       const isCurrentlySelected = element.classList.contains('selected');
       const isLastInPath = (roundIndex === selectedPath.length - 1);
 
-      // 最終選択のフォルダを再度クリックした場合のみGoogle Driveを開く
       if (isCurrentlySelected && isLastInPath) {
-        const driveUrl = (folderId.startsWith('YOUR_') || folderId === 'root')
+        const driveUrl = folderId.startsWith('YOUR_')
           ? 'https://drive.google.com/drive/'
           : `https://drive.google.com/drive/folders/${folderId}`;
         window.open(driveUrl, '_blank');
         return;
       }
 
-      // パスの切捨て更新（途中の階層をクリックした場合はそこまでのパスにする）
       selectedPath = selectedPath.slice(0, roundIndex);
       selectedPath.push({ id: folderId, name: folderName, element: element, isFolder: true });
 
       highlightSelection(element);
       updateSearchPlaceholder();
-      loadChildNodes(folderId, roundIndex + 1);
+      loadChildNodesFromDB(folderId, roundIndex + 1);
     }
 
-    // 1. ファイルクリック処理（ファイルの右隣にプレビュー表示）
+    // ファイルクリック制御（右隣にプレビュー表示）
     function handleFileClick(file, element, roundIndex) {
       selectedPath = selectedPath.slice(0, roundIndex);
       selectedPath.push({ id: file.id, name: file.name, element: element, isFolder: false });
 
       highlightSelection(element);
       clearRoundsFrom(roundIndex + 1);
-      
-      // 右隣にプレビュー列を生成
       renderPreviewColumn(file, roundIndex + 1);
       drawConnectors();
     }
 
-    // 右隣へのプレビューカラム描画
+    // DBから子要素を0.01秒で抽出してレンダリング
+    function loadChildNodesFromDB(parentId, roundIndex) {
+      clearRoundsFrom(roundIndex);
+
+      const items = driveDatabase.filter(item => item.parentFolder === parentId);
+      renderNextRound(items, roundIndex);
+      setTimeout(drawConnectors, 30);
+    }
+
+    function renderNextRound(items, roundIndex) {
+      const container = document.getElementById('tournament-container');
+      const column = document.createElement('div');
+      column.className = 'round-column';
+      column.id = `round-${roundIndex}`;
+
+      if (items.length === 0) {
+        column.innerHTML = '<div style="font-size:12px; color:#94a3b8; padding:10px;">(空のフォルダです)</div>';
+      } else {
+        items.forEach(item => {
+          const isFolder = item.mimeType === 'application/vnd.google-apps.folder';
+          const card = document.createElement('div');
+          card.className = 'node-card';
+          
+          card.innerHTML = `
+            <span class="node-icon">${isFolder ? '📁' : '📄'}</span>
+            <span class="title" title="${item.name}">${item.name}</span>
+          `;
+
+          card.addEventListener('click', () => {
+            if (isFolder) {
+              handleFolderClick(item.id, item.name, card, roundIndex);
+            } else {
+              handleFileClick(item, card, roundIndex);
+            }
+          });
+
+          column.appendChild(card);
+        });
+      }
+
+      container.appendChild(column);
+      adjustColumnPosition(roundIndex);
+    }
+
     function renderPreviewColumn(file, roundIndex) {
       const container = document.getElementById('tournament-container');
       const column = document.createElement('div');
@@ -360,92 +420,98 @@
       adjustColumnPosition(roundIndex);
     }
 
-    function updateSearchPlaceholder() {
-      const searchInput = document.getElementById('search-input');
+    // 爆速ローカルインデックス検索＋Gemini補正
+    async function executeFastSearch() {
+      const keyword = document.getElementById('search-input').value.trim();
       const currentFolder = getCurrentSelectedFolder();
-      if (currentFolder) {
-        searchInput.placeholder = `「${currentFolder.name}」のフォルダ内をAI検索...`;
-      } else {
-        searchInput.placeholder = "Google Drive 全体をAI検索...";
+
+      if (!keyword) return;
+
+      document.getElementById('status').innerText = '検索中...';
+
+      // 選択中フォルダの配下をフィルタリング
+      const targetFolderId = currentFolder ? currentFolder.id : null;
+      let scopeFiles = driveDatabase;
+      
+      if (targetFolderId) {
+        scopeFiles = driveDatabase.filter(item => 
+          item.parentFolder === targetFolderId || (item.path && item.path.includes(currentFolder.name))
+        );
       }
+
+      // ローカルで高速部分一致検索
+      let matched = scopeFiles.filter(item => item.name.toLowerCase().includes(keyword.toLowerCase()));
+
+      // Gemini Keyが登録されている場合はAIで選別補正
+      if (GEMINI_API_KEY && GEMINI_API_KEY !== 'YOUR_GEMINI_API_KEY_HERE' && matched.length > 0) {
+        matched = await refineWithGemini(keyword, matched);
+      }
+
+      renderSearchResults(matched, keyword);
+      document.getElementById('status').innerText = `完了 (${matched.length}件)`;
     }
 
-    function getCurrentSelectedFolder() {
-      for (let i = selectedPath.length - 1; i >= 0; i--) {
-        if (selectedPath[i].isFolder) return selectedPath[i];
-      }
-      return null;
-    }
-
-    // 子要素読み込み
-    async function loadChildNodes(parentId, roundIndex) {
-      document.getElementById('status').innerText = '読み込み中...';
-      clearRoundsFrom(roundIndex);
+    async function refineWithGemini(query, items) {
+      const summaries = items.map(f => `- ID: ${f.id}, 名前: ${f.name}`).join('\n');
+      const prompt = `以下のリストの中から「${query}」に最も適合するファイルのIDだけをカンマ区切りで返してください。\n${summaries}`;
 
       try {
-        const query = `'${parentId}' in parents and trashed = false`;
-        const res = await fetch(
-          `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=files(id,name,mimeType,webViewLink)&supportsAllDrives=true&includeItemsFromAllDrives=true&pageSize=100`,
-          { headers: { Authorization: `Bearer ${accessToken}` } }
-        );
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+        });
         const data = await res.json();
-        const items = data.files || [];
-
-        renderNextRound(items, roundIndex);
-        document.getElementById('status').innerText = `完了 (${items.length}件)`;
-        setTimeout(drawConnectors, 50);
-      } catch (err) {
-        console.error(err);
-        document.getElementById('status').innerText = 'エラー';
+        const reply = data.candidates[0].content.parts[0].text.trim();
+        const ids = reply.split(',').map(s => s.trim());
+        return items.filter(f => ids.includes(f.id));
+      } catch (e) {
+        return items;
       }
     }
 
-    function renderNextRound(items, roundIndex) {
+    function renderSearchResults(items, keyword) {
       const container = document.getElementById('tournament-container');
+      const existingSearchCol = document.getElementById('round-search');
+      if (existingSearchCol) existingSearchCol.remove();
+
       const column = document.createElement('div');
       column.className = 'round-column';
-      column.id = `round-${roundIndex}`;
+      column.id = 'round-search';
 
-      if (items.length === 0) {
-        column.innerHTML = '<div style="font-size:12px; color:#a0aec0; padding:10px;">(空です)</div>';
-      } else {
-        items.forEach(item => {
-          const isFolder = item.mimeType === 'application/vnd.google-apps.folder';
-          const card = document.createElement('div');
-          card.className = 'node-card';
-          
-          const iconSrc = isFolder ? 'image/folder.png' : 'image/file.png';
-          card.innerHTML = `
-            <img src="${iconSrc}" class="icon-img" alt="icon" />
-            <span class="title" title="${item.name}">${item.name}</span>
-          `;
+      const header = document.createElement('div');
+      header.style.fontSize = '12px';
+      header.style.fontWeight = '700';
+      header.style.color = '#6366f1';
+      header.innerText = `🔍 検索結果: 「${keyword}」 (${items.length}件)`;
+      column.appendChild(header);
 
-          card.addEventListener('click', () => {
-            if (isFolder) {
-              handleFolderClick(item.id, item.name, card, roundIndex);
-            } else {
-              handleFileClick(item, card, roundIndex);
-            }
-          });
-
-          column.appendChild(card);
+      items.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'node-card';
+        card.innerHTML = `
+          <span class="node-icon">${item.mimeType?.includes('folder') ? '📁' : '📄'}</span>
+          <span class="title" title="${item.name}">${item.name}</span>
+        `;
+        card.addEventListener('click', () => {
+          highlightSelection(card);
+          clearRoundsFrom(1);
+          renderPreviewColumn(item, 1);
+          drawConnectors();
         });
-      }
+        column.appendChild(card);
+      });
 
       container.appendChild(column);
-      adjustColumnPosition(roundIndex);
+      column.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
-    // カラムの上下位置調整
     function adjustColumnPosition(roundIndex) {
       const parentObj = selectedPath[roundIndex - 1];
       const childCol = document.getElementById(`round-${roundIndex}`);
       if (!parentObj || !childCol) return;
 
       const parentCard = parentObj.element;
-      const parentCol = parentCard.parentElement;
-
-      // 選択した親カードの相対Y位置に子のカラムの中心を合わせる
       const parentCenterY = parentCard.offsetTop + (parentCard.offsetHeight / 2);
       const childColHeight = childCol.offsetHeight;
 
@@ -453,7 +519,6 @@
       childCol.style.marginTop = `${targetMarginTop}px`;
     }
 
-    // 2. SVG分岐線の描画位置計算修正
     function drawConnectors() {
       const svg = document.getElementById('connector-svg');
       const container = document.getElementById('tournament-container');
@@ -471,8 +536,6 @@
         adjustColumnPosition(i + 1);
 
         const pRect = parentObj.element.getBoundingClientRect();
-        
-        // コンテナ相対座標に変換
         const startX = pRect.right - containerRect.left;
         const startY = pRect.top + pRect.height / 2 - containerRect.top;
 
@@ -493,13 +556,9 @@
 
         const isNextSelected = selectedPath[i + 1];
 
-        // 親から幹への横線
         createSvgLine(svg, startX, startY, midX, startY, `line-default ${isNextSelected ? 'line-active' : ''}`);
-
-        // 縦幹線
         createSvgLine(svg, midX, minChildY, midX, maxChildY, 'line-default');
 
-        // 幹から各子要素への横線
         childCards.forEach(child => {
           const cRect = child.getBoundingClientRect();
           const childX = cRect.left - containerRect.left;
@@ -523,125 +582,17 @@
       svg.appendChild(line);
     }
 
-    // Gemini API 検索
-    async function executeGeminiSearch() {
-      const keyword = document.getElementById('search-input').value.trim();
+    function updateSearchPlaceholder() {
+      const searchInput = document.getElementById('search-input');
       const currentFolder = getCurrentSelectedFolder();
-
-      if (!accessToken) { alert('Googleでログインしてください'); return; }
-      if (!keyword) { alert('検索キーワードを入力してください'); return; }
-
-      document.getElementById('status').innerText = 'スキャン中...';
-
-      const targetFolderId = currentFolder ? currentFolder.id : 'root';
-      const allFiles = await fetchAllFilesRecursively(targetFolderId);
-
-      if (allFiles.length === 0) {
-        alert('検索対象ファイルが見つかりませんでした');
-        document.getElementById('status').innerText = '0件';
-        return;
-      }
-
-      if (GEMINI_API_KEY && GEMINI_API_KEY !== 'YOUR_GEMINI_API_KEY_HERE') {
-        document.getElementById('status').innerText = 'Gemini AIで解析中...';
-        const searchResults = await searchWithGemini(keyword, allFiles, GEMINI_API_KEY);
-        renderSearchResults(searchResults, keyword);
-      } else {
-        document.getElementById('status').innerText = 'キーワード検索中...';
-        const filtered = allFiles.filter(f => f.name.toLowerCase().includes(keyword.toLowerCase()));
-        renderSearchResults(filtered, keyword);
-      }
-
-      document.getElementById('status').innerText = '検索完了';
+      searchInput.placeholder = currentFolder ? `「${currentFolder.name}」のフォルダ内を爆速検索...` : "Google Drive 全体を爆速検索...";
     }
 
-    async function fetchAllFilesRecursively(folderId) {
-      let fileList = [];
-      const query = `'${folderId}' in parents and trashed = false`;
-
-      try {
-        const res = await fetch(
-          `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=files(id,name,mimeType)&supportsAllDrives=true&includeItemsFromAllDrives=true&pageSize=100`,
-          { headers: { Authorization: `Bearer ${accessToken}` } }
-        );
-        const data = await res.json();
-        const items = data.files || [];
-
-        for (const item of items) {
-          if (item.mimeType === 'application/vnd.google-apps.folder') {
-            const subFiles = await fetchAllFilesRecursively(item.id);
-            fileList = fileList.concat(subFiles);
-          } else {
-            fileList.push(item);
-          }
-        }
-      } catch (err) {
-        console.error('Fetch error:', err);
+    function getCurrentSelectedFolder() {
+      for (let i = selectedPath.length - 1; i >= 0; i--) {
+        if (selectedPath[i].isFolder) return selectedPath[i];
       }
-      return fileList;
-    }
-
-    async function searchWithGemini(userQuery, files, apiKey) {
-      const fileSummaries = files.map(f => `- ID: ${f.id}, 名前: ${f.name}`).join('\n');
-
-      const prompt = `以下のファイル一覧の中から、ユーザーの検索「${userQuery}」に最も関連するファイルを選び、そのIDのみをカンマ区切りで返してください（例: id1,id2）。該当なしは NONE と返してください。
-
-【ファイル一覧】
-${fileSummaries}`;
-
-      try {
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-        });
-        const data = await res.json();
-        const replyText = data.candidates[0].content.parts[0].text.trim();
-
-        if (replyText.includes('NONE')) return [];
-
-        const matchedIds = replyText.split(',').map(s => s.trim());
-        return files.filter(f => matchedIds.includes(f.id));
-      } catch (err) {
-        console.error('Gemini error:', err);
-        return files.filter(f => f.name.includes(userQuery));
-      }
-    }
-
-    function renderSearchResults(items, keyword) {
-      const container = document.getElementById('tournament-container');
-      const existingSearchCol = document.getElementById('round-search');
-      if (existingSearchCol) existingSearchCol.remove();
-
-      const column = document.createElement('div');
-      column.className = 'round-column';
-      column.id = 'round-search';
-
-      const header = document.createElement('div');
-      header.style.fontSize = '12px';
-      header.style.fontWeight = 'bold';
-      header.style.color = '#7c3aed';
-      header.innerText = `🔍 検索結果: 「${keyword}」 (${items.length}件)`;
-      column.appendChild(header);
-
-      items.forEach(item => {
-        const card = document.createElement('div');
-        card.className = 'node-card';
-        card.innerHTML = `
-          <img src="image/file.png" class="icon-img" alt="icon" />
-          <span class="title" title="${item.name}">${item.name}</span>
-        `;
-        card.addEventListener('click', () => {
-          highlightSelection(card);
-          clearRoundsFrom(1);
-          renderPreviewColumn(item, 1);
-          drawConnectors();
-        });
-        column.appendChild(card);
-      });
-
-      container.appendChild(column);
-      column.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      return null;
     }
 
     function highlightSelection(element) {
