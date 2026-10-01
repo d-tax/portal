@@ -272,27 +272,34 @@
 
         
 
+<div id="main-wrapper">
+    <div id="workspace">
+      <svg id="connector-svg"></svg>
+      <div id="tournament-container">
 
+        <!-- 第0ラウンド（ドライブ選択） -->
+        <div class="round-column" id="round-0">
+          <div class="node-card" onclick="selectDrive('0AFuy2E2OGEvyUk9PVA', '本部管理', this)">
+            <span class="node-icon">📁</span>
+            <span class="title">本部管理</span>
+          </div>
+          <div class="node-card" onclick="selectDrive('0ALkBF3CxaFy_Uk9PVA', '法人クライアント', this)">
+            <span class="node-icon">📁</span>
+            <span class="title">法人クライアント</span>
+          </div>
+          <div class="node-card" onclick="selectDrive('0ACErmC2osz2KUk9PVA', '個人クライアント', this)">
+            <span class="node-icon">📁</span>
+            <span class="title">個人クライアント</span>
+          </div>
+        </div>
 
-
-        
-
-        
-    <!-- 第1ラウンド: 3つの共有フォルダ/ドライブ -->
-    <div class="round-column" id="round-0">
-      <div class="node-card drive-a" onclick="selectDrive('0AFuy2E2OGEvyUk9PVA', '共有ドライブ A', this)">
-        <img src="image/folder.png" class="icon-img" alt="folder" />
-        <span class="title">本部管理</span>
-      </div>
-      <div class="node-card drive-b" onclick="selectDrive('0ALkBF3CxaFy_Uk9PVA', '共有ドライブ B', this)">
-        <img src="image/folder.png" class="icon-img" alt="folder" />
-        <span class="title">法人クライアント</span>
-      </div>
-      <div class="node-card drive-c" onclick="selectDrive('0ACErmC2osz2KUk9PVA', '共有ドライブ C', this)">
-        <img src="image/folder.png" class="icon-img" alt="folder" />
-        <span class="title">個人クライアント</span>
       </div>
     </div>
+  </div>
+
+
+        
+
 
 <!-- 554521661384-kpp41s620jutab56eu2qi0b7bcbrfgl6.apps.googleusercontent.com -->
 <!-- gemini api : AQ.Ab8RN6JZMu5ZQa5PxTDq-cE3l64OZhx2-lptnkCD_4uxXvfYLw -->
@@ -300,6 +307,9 @@
 
         
 
+
+
+        
 
 
 <script>
