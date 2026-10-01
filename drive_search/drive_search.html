@@ -177,10 +177,13 @@
     }
 
     /* フォルダ/ファイル アイコンスタイル */
+    /* アイコン画像のサイズと配置調整 */
     .node-icon {
-      font-size: 20px;
-      line-height: 1;
+      width: 20px;
+      height: 20px;
+      object-fit: contain;
       flex-shrink: 0;
+      display: block;
     }
 
     .title {
@@ -280,15 +283,15 @@
         <!-- 第0ラウンド（ドライブ選択） -->
         <div class="round-column" id="round-0">
           <div class="node-card" onclick="selectDrive('0AFuy2E2OGEvyUk9PVA', '本部管理', this)">
-            <span class="node-icon">📁</span>
+            <img class="node-icon" src="image/folder.png" alt="folder">
             <span class="title">本部管理</span>
           </div>
           <div class="node-card" onclick="selectDrive('0ALkBF3CxaFy_Uk9PVA', '法人クライアント', this)">
-            <span class="node-icon">📁</span>
+            <img class="node-icon" src="image/folder.png" alt="folder">
             <span class="title">法人クライアント</span>
           </div>
           <div class="node-card" onclick="selectDrive('0ACErmC2osz2KUk9PVA', '個人クライアント', this)">
-            <span class="node-icon">📁</span>
+            <img class="node-icon" src="image/folder.png" alt="folder">
             <span class="title">個人クライアント</span>
           </div>
         </div>
@@ -297,6 +300,7 @@
     </div>
   </div>
 
+      
 
         
 
@@ -389,7 +393,12 @@
           card.className = 'node-card';
           
           card.innerHTML = `
-            <span class="node-icon">${isFolder ? '📁' : '📄'}</span>
+            const iconPath = isFolder ? 'image/folder.png' : 'image/file.png';
+
+            card.innerHTML = `
+              <img class="node-icon" src="${iconPath}" alt="${isFolder ? 'folder' : 'file'}">
+              <span class="title" title="${item.name}">${item.name}</span>
+            `;
             <span class="title" title="${item.name}">${item.name}</span>
           `;
 
@@ -499,10 +508,16 @@
       items.forEach(item => {
         const card = document.createElement('div');
         card.className = 'node-card';
+
+        // フォルダかファイルかを判定して画像パスを切り替え
+        const isFolder = item.mimeType?.includes('folder');
+        const iconPath = isFolder ? 'image/folder.png' : 'image/file.png';
+
         card.innerHTML = `
-          <span class="node-icon">${item.mimeType?.includes('folder') ? '📁' : '📄'}</span>
+          <img class="node-icon" src="${iconPath}" alt="${isFolder ? 'folder' : 'file'}">
           <span class="title" title="${item.name}">${item.name}</span>
         `;
+
         card.addEventListener('click', () => {
           highlightSelection(card);
           clearRoundsFrom(1);
