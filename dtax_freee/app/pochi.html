@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ポチポチ手入力取引チェッカー - freee拡張ポータル</title>
+  <link rel="stylesheet" href="../css/common.css">
+  <style>
+    .app-header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+    .app-tag {
+      font-size: 12px;
+      color: var(--text-muted);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 6px 12px;
+      border-radius: 6px;
+    }
+    .date-range-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .date-field label {
+      display: block;
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+      font-weight: 500;
+    }
+    .info-box {
+      background: var(--primary-light);
+      border: 1px solid rgba(37, 99, 235, 0.2);
+      color: var(--text-main);
+      padding: 14px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      margin-top: 16px;
+      line-height: 1.6;
+    }
+    .loading-box {
+      text-align: center;
+      padding: 40px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 24px;
+      box-shadow: var(--shadow-sm);
+    }
+    .spinner {
+      width: 32px;
+      height: 32px;
+      border: 3px solid var(--border);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 12px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .summary {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow-sm);
+    }
+    .summary-stats {
+      display: flex;
+      gap: 20px;
+    }
+    .stat .num {
+      font-size: 24px;
+      font-weight: 700;
+      display: block;
+    }
+    .stat .num.danger { color: var(--danger-text); }
+    .stat .lbl {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .all-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+    .all-table th, .all-table td {
+      padding: 12px 16px;
+      text-align: left;
+      font-size: 13px;
+      border-bottom: 1px solid var(--border);
+    }
+    .all-table th {
+      background: var(--bg);
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+    .all-table tr:last-child td { border-bottom: none; }
+  </style>
+</head>
+<body>
+  <div class="cursor-glow" id="cursorGlow"></div>
+  <div class="cursor-dot" id="cursorDot"></div>
+
+  <div class="page">
+    <header>
+      <div class="header-left">
+        <img src="../images/360097.png" alt="D-Tax Logo" class="header-logo">
+        <div class="header-title-area">
+          <h1>ポチポチ取引チェッカー</h1>
+          <p>対象事業所: <b id="currentCompanyLabel" style="color:var(--text-main);">読み込み中...</b></p>
+        </div>
+      </div>
+      
+      <div class="menu-container">
+        <button class="hamburger-btn" id="hamburgerBtn" aria-label="メニューを開く" type="button">
+          <span></span><span></span><span></span>
+        </button>
+        <div class="dropdown-menu" id="dropdownMenu">
+          <button class="dropdown-item" id="logoutBtn" type="button"><span>🚪</span> ログアウト</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="app-header-bar">
+      <a href="../index.html" class="btn-nav">← ポータルへ戻る</a>
+      <span class="app-tag">使用中：ポチポチ手入力取引チェッカー</span>
+    </div>
+
+    <div class="step-box">
+      <div class="step-title">抽出条件の設定</div>
+      <div class="step-desc">自動登録ルールが未適用のため画面上で繰り返し手入力されている取引パターンを解析します。</div>
+      
+      <div class="date-range-grid" style="margin-bottom: 16px;">
+        <div class="date-field">
+          <label>対象期間</label>
+          <select class="form-select" id="pochiMonthsSelect">
+            <option value="3" selected>過去 3ヶ月</option>
+            <option value="6">過去 6ヶ月</option>
+            <option value="12">過去 12ヶ月</option>
+          </select>
+        </div>
+        <div class="date-field">
+          <label>手入力回数の閾値（○回以上）</label>
+          <input type="number" class="form-input" id="pochiMinCount" value="5" min="1">
+        </div>
+      </div>
+      
+      <div style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+        <input type="checkbox" id="excludeNoPartner" checked style="width: 16px; height: 16px; cursor: pointer;">
+        <label for="excludeNoPartner" style="font-size: 13px; color: var(--text-main); cursor: pointer;">「取引先が指定なし」のデータを集計から除外する</label>
+      </div>
+
+      <button class="btn-primary" id="runPochiCheckBtn" type="button">ポチポチ取引を抽出する</button>
+
+      <div class="info-box">
+        <b>【何を抽出するのか】</b><br>
+        登録方法が「手動」の取引データに絞り込み、自動登録ルールが未適用のため画面上で繰り返し手入力されている取引を抽出します。
+      </div>
+    </div>
+
+    <div id="pochiLoadingSection" class="loading-box hidden">
+      <div class="spinner"></div>
+      <div style="font-size: 13px; font-weight: 600; color: var(--text-main);" id="pochiLoadingText">取引データを取得中...</div>
+    </div>
+
+    <div id="pochiResultSection" class="hidden">
+      <div class="summary">
+        <div class="summary-stats">
+          <div class="stat"><span class="num danger" id="statPochiTotalCount">0</span><span class="lbl">改善候補パターン数</span></div>
+          <div class="stat"><span class="num danger" id="statPochiManualRatio">0%</span><span class="lbl">手動データ中の手入力比率</span></div>
+        </div>
+      </div>
+      <div style="overflow-x: auto;">
+        <table class="all-table">
+          <thead>
+            <tr><th>取引先 / 摘要ヒント</th><th>勘定科目</th><th>手入力回数</th><th>月平均推定量</th><th>改善インパクト</th></tr>
+          </thead>
+          <tbody id="pochiTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="error-box" id="errorBox"></div>
+  </div>
+
+  <script>
+    (function () {
+      "use strict";
+      // カーソル・演出処理
+      const cursorDot = document.getElementById('cursorDot');
+      const cursorGlow = document.getElementById('cursorGlow');
+      let mouseX = 0, mouseY = 0, glowX = 0, glowY = 0;
+      window.addEventListener('mousemove', (e) => {
+        mouseX = e.clientX; mouseY = e.clientY;
+        cursorDot.style.opacity = '1'; cursorGlow.style.opacity = '1';
+        cursorDot.style.left = `${mouseX}px`; cursorDot.style.top = `${mouseY}px`;
+      });
+      function animateGlow() {
+        glowX += (mouseX - glowX) * 0.15; glowY += (mouseY - glowY) * 0.15;
+        cursorGlow.style.left = `${glowX}px`; cursorGlow.style.top = `${glowY}px`;
+        requestAnimationFrame(animateGlow);
+      }
+      animateGlow();
+      window.addEventListener('click', (e) => {
+        const ripple = document.createElement('div');
+        ripple.className = 'ripple-wave';
+        ripple.style.left = `${e.clientX}px`; ripple.style.top = `${e.clientY}px`;
+        document.body.appendChild(ripple);
+        setTimeout(() => ripple.remove(), 800);
+      });
+
+      // ハンバーガーメニュー
+      const hamburgerBtn = document.getElementById('hamburgerBtn');
+      const dropdownMenu = document.getElementById('dropdownMenu');
+      const logoutBtn = document.getElementById('logoutBtn');
+      hamburgerBtn.addEventListener('click', (e) => { e.stopPropagation(); dropdownMenu.classList.toggle('show'); });
+      window.addEventListener('click', () => dropdownMenu.classList.remove('show'));
+      dropdownMenu.addEventListener('click', (e) => e.stopPropagation());
+      logoutBtn.addEventListener('click', () => {
+        if (confirm('ログアウトしますか？')) { sessionStorage.clear(); window.location.href = '../index.html'; }
+      });
+
+      // アプリ固有ロジック
+      const token = sessionStorage.getItem('access_token');
+      const companyId = sessionStorage.getItem('company_id');
+      if (!token || !companyId) { window.location.href = '../index.html'; return; }
+      document.getElementById('currentCompanyLabel').textContent = sessionStorage.getItem('company_name');
+
+      document.getElementById('runPochiCheckBtn').addEventListener('click', async () => {
+        const months = parseInt(document.getElementById('pochiMonthsSelect').value, 10) || 3;
+        const minCount = parseInt(document.getElementById('pochiMinCount').value, 10) || 5;
+        const excludeNoPartner = document.getElementById('excludeNoPartner').checked;
+
+        const btn = document.getElementById('runPochiCheckBtn');
+        const loading = document.getElementById('pochiLoadingSection');
+        const loadingText = document.getElementById('pochiLoadingText');
+        const result = document.getElementById('pochiResultSection');
+        result.classList.add('hidden');
+        loading.classList.remove('hidden');
+        btn.disabled = true;
+
+        try {
+          loadingText.textContent = "取引データを取得中...";
+          let deals = [];
+          let offset = 0;
+          const limit = 100;
+
+          while (true) {
+            const url = `https://api.freee.co.jp/api/1/deals?company_id=${companyId}&limit=${limit}&offset=${offset}`;
+            const res = await fetch(url, {
+              headers: { 'Authorization': `Bearer ${token}`, 'accept': 'application/json' }
+            });
+            if (!res.ok) throw new Error(`APIエラー: ${res.status}`);
+            const data = await res.json();
+            const batch = data.deals || [];
+            deals = deals.concat(batch);
+            if (batch.length < limit) break;
+            offset += limit;
+          }
+
+          const targetDate = new Date();
+          targetDate.setMonth(targetDate.getMonth() - months);
+
+          const periodDeals = deals.filter(d => {
+            if (!d.issue_date) return false;
+            return new Date(d.issue_date) >= targetDate;
+          });
+
+          const manualDeals = periodDeals.filter(d => d.deal_origin_name === '手動');
+          const totalManualCount = manualDeals.length;
+
+          const confirmed = confirm(`${totalManualCount}件の取引データから未使用の取引先を検出します。時間がかかる可能性がありますが続けますか？`);
+          if (!confirmed) {
+            loading.classList.add('hidden');
+            btn.disabled = false;
+            return;
+          }
+
+          loadingText.textContent = "データを解析中...";
+
+          const freqMap = {};
+          manualDeals.forEach(d => {
+            const rawPartner = d.partner_name ? d.partner_name.trim() : '';
+            const details = d.details || [];
+            details.forEach(det => {
+              const account = det.account_item_name || '不明';
+              const desc = det.description ? det.description.trim() : '';
+
+              let partnerKey = rawPartner;
+              let displayName = rawPartner;
+
+              if (!rawPartner) {
+                if (excludeNoPartner) return;
+                if (desc) {
+                  partnerKey = `[摘要一致] ${desc}`;
+                  displayName = `<span style="color:var(--text-muted); font-size:11px;">[取引先未設定]</span> ${desc}`;
+                } else {
+                  partnerKey = '指定なし';
+                  displayName = '<span style="color:var(--text-muted);">指定なし</span>';
+                }
+              }
+
+              const key = `${partnerKey}__${account}`;
+              if (!freqMap[key]) {
+                freqMap[key] = { partnerDisplay: displayName, account, count: 0 };
+              }
+              freqMap[key].count += 1;
+            });
+          });
+
+          const candidates = Object.values(freqMap).filter(item => item.count >= minCount);
+          candidates.sort((a, b) => b.count - a.count);
+
+          const tbody = document.getElementById('pochiTableBody');
+          tbody.innerHTML = '';
+          if (candidates.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">条件に合致する手入力頻発パターンはありませんでした。（期間や閾値を変更してみてください）</td></tr>';
+          } else {
+            candidates.forEach(item => {
+              tbody.innerHTML += `<tr><td><b>${item.partnerDisplay}</b></td><td>${item.account}</td><td style="color:var(--danger-text); font-weight:bold;">${item.count} 回</td><td>約 ${(item.count / months).toFixed(1)} 件/月</td><td><span style="font-size:11px; background:var(--primary-light); color:var(--primary); padding:2px 6px; border-radius:4px; font-weight:bold; border: 1px solid rgba(37, 99, 235, 0.2);">自動登録ルール推奨</span></td></tr>`;
+            });
+          }
+
+          document.getElementById('statPochiTotalCount').textContent = candidates.length + ' 件';
+          document.getElementById('statPochiManualRatio').textContent = totalManualCount > 0 ? Math.round((candidates.reduce((acc, cur) => acc + cur.count, 0) / totalManualCount) * 100) + '%' : '0%';
+          loading.classList.add('hidden');
+          result.classList.remove('hidden');
+        } catch (err) {
+          alert('データ取得に失敗しました: ' + err.message);
+          loading.classList.add('hidden');
+        } finally {
+          btn.disabled = false;
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
