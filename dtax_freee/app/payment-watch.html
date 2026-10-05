@@ -94,6 +94,22 @@
     .freq-chip.y { background: #f5f3ff; color: #5b21b6; }
     .overdue { color: #991b1b; font-weight: 700; }
 
+    .exclude-panel { border: 1px solid var(--border); border-radius: 8px; background: var(--surface); margin-bottom: 14px; }
+    .exclude-panel summary { cursor: pointer; padding: 12px 14px; font-size: 13px; font-weight: 600; color: var(--text-main); list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    .exclude-panel summary::-webkit-details-marker { display: none; }
+    .exclude-panel summary::after { content: '開く'; font-size: 12px; font-weight: 500; color: var(--text-muted); }
+    .exclude-panel[open] summary::after { content: '閉じる'; }
+    .exclude-panel .sum-note { font-weight: 400; color: var(--text-muted); font-size: 12px; margin-left: 8px; }
+    .exclude-body { padding: 0 14px 14px; }
+    .exclude-help { font-size: 12px; color: var(--text-muted); line-height: 1.7; margin-bottom: 10px; }
+    .acc-group-title { font-size: 12px; font-weight: 700; color: var(--text-muted); margin: 12px 0 6px; }
+    .acc-list { display: flex; flex-wrap: wrap; gap: 6px; }
+    .acc-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; padding: 5px 10px; border: 1px solid var(--border); border-radius: 999px; cursor: pointer; background: var(--surface); color: var(--text-main); user-select: none; }
+    .acc-chip input { margin: 0; accent-color: #991b1b; }
+    .acc-chip.on { background: #fef2f2; border-color: #fca5a5; color: #991b1b; }
+    .acc-chip .n { color: var(--text-muted); font-variant-numeric: tabular-nums; }
+    .acc-chip .rec { font-size: 10px; font-weight: 700; color: #92400e; }
+    .link-btn { background: none; border: none; color: var(--primary); font-size: 12px; cursor: pointer; padding: 0; text-decoration: underline; margin-top: 10px; }
     .section-gap { margin-top: 20px; }
     .actions-right { margin-top: 16px; display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
     .hidden { display: none !important; }
@@ -132,27 +148,27 @@
 
     <!-- 1. 分析 -->
     <div class="step-box">
-      <div class="step-title" style="margin-bottom: 6px;">1. 過去の支払を分析する</div>
-      <div class="step-desc">過去の支出取引を取引先ごとに集計し、毎月・毎年の支払を自動で判定します。初回と、半年に1回程度の見直し時に実行してください。手動で変更した支払方法は再分析しても保持されます。</div>
+      <div class="step-title" style="margin-bottom: 6px;">1. 支払頻度を分析する</div>
+      <div class="step-desc">分析する支払頻度を選んで実行します。「毎月」は直近13ヶ月、「毎年」は直近25ヶ月の支出取引を使います。連続して支払が発生したことのない取引先は一覧に入りません。初回と、半年に1回程度の見直し時に実行してください。手動で変更した支払方法は再分析しても保持されます。</div>
       <div class="control-row">
-        <label>分析期間
-          <select id="rangeSelect">
-            <option value="13">直近13ヶ月（標準）</option>
-            <option value="25">直近25ヶ月（年1回の支払を確実に拾う）</option>
-          </select>
-        </label>
+        <span style="font-size:13px; color:var(--text-muted);">支払頻度の分析</span>
+        <div class="seg" id="kindSelect" role="group" aria-label="支払頻度の分析">
+          <button type="button" data-k="毎月" class="active">毎月</button>
+          <button type="button" data-k="毎年">毎年</button>
+        </div>
+        <label>継続率の基準 <input type="number" id="ratioTh" min="0" max="100" step="5"> %以上</label>
       </div>
-      <button class="btn-secondary" id="runAnalyzeBtn" type="button">過去の支払を分析する</button>
+      <button class="btn-secondary" id="runAnalyzeBtn" type="button">毎月の支払を分析する</button>
       <div class="meta-line" id="analyzeMeta"></div>
 
       <div class="info-box">
-        <b>【自動判定の条件】</b>
+        <b>【一覧に入る条件】</b>
         <ul>
-          <li><b>毎月:</b> 直近12ヶ月のうち9ヶ月以上で取引がある取引先</li>
-          <li><b>毎年:</b> 約1年（330〜400日）の間隔で取引があり、直近12ヶ月の取引が2ヶ月以内の取引先</li>
-          <li><b>対象外:</b> 上記以外（不定期・1回のみ）。必要に応じて手動で「毎月」「毎年」に変更できます</li>
+          <li><b>毎月:</b> 2ヶ月以上続けて支払があり、継続率が基準以上の取引先。最後の支払から6ヶ月以上空いている取引先は解約済みとみなして除外します</li>
+          <li><b>毎年:</b> 約1年（330〜400日）の間隔で2年続けて支払があり、継続率が基準以上の取引先。直近12ヶ月に3ヶ月以上支払がある取引先は除外します</li>
+          <li><b>継続率:</b> 最初の支払から最後の支払までの期間のうち、支払があった月（毎年の場合は年）の割合。途中から契約した取引先も不利になりません。また、直近の登録漏れで継続率が下がって一覧から消えることもありません</li>
         </ul>
-        取引先が未設定の取引は集計対象外です。結果はこのブラウザに事業所ごとに保存され、次回からは差分だけを取得します。
+        継続率の基準を変えると一覧にすぐ反映されます（再分析は不要です）。主な勘定科目が「除外する勘定科目」に含まれる取引先は「対象外」になります。取引先が未設定の取引は集計できません。
       </div>
 
       <div id="analyzeLoading" class="loading-box hidden">
@@ -175,8 +191,18 @@
           <button type="button" data-f="対象外">対象外<span class="cnt" id="cntX"></span></button>
         </div>
         <input type="search" id="masterSearch" placeholder="取引先名・勘定科目で絞り込み" aria-label="取引先名・勘定科目で絞り込み">
-        <label><input type="checkbox" id="hideOnce" checked> 取引が1回だけの取引先を隠す</label>
+        <label><input type="checkbox" id="showBelow"> 継続率が基準未満の取引先も表示</label>
+        <span class="meta-line" id="hiddenNote" style="margin-top:0;"></span>
       </div>
+
+      <details class="exclude-panel" id="excludePanel">
+        <summary><span>除外する勘定科目<span class="sum-note" id="excludeSummary"></span></span></summary>
+        <div class="exclude-body">
+          <div class="exclude-help">チェックした勘定科目が主な科目になっている取引先は、自動で「対象外」になります（カフェ・コンビニ・タクシーなどの除去用）。個別に「毎月」「毎年」へ変更した取引先はそのまま残ります。この設定はすべての事業所で共通です。</div>
+          <div id="excludeLists"></div>
+          <button type="button" class="link-btn" id="resetExcludeBtn">おすすめの設定に戻す</button>
+        </div>
+      </details>
 
       <div class="table-wrap">
         <table class="all-table">
@@ -189,7 +215,7 @@
               <th>登録履歴</th>
               <th>通常の登録時期</th>
               <th>最終登録日</th>
-              <th>自動判定</th>
+              <th>分析結果</th>
             </tr>
           </thead>
           <tbody id="masterBody"></tbody>
@@ -337,11 +363,11 @@
       const median = (arr) => { if (!arr.length) return 1; const a = [...arr].sort((x, y) => x - y); return a[Math.floor((a.length - 1) / 2)]; };
 
       // ---------- 保存（このブラウザ・事業所ごと） ----------
-      const STORE_KEY = `paymentWatch:v1:${companyId}`;
+      const STORE_KEY = `paymentWatch:v2:${companyId}`;
       const HISTORY_CAP = 40;
       const MONTHS_CAP = 36;
       function defaultStore() {
-        return { analyzedAt: null, rangeMonths: 13, lastSync: null, lastCheckAt: null, noPartnerCount: 0, settings: { graceMonthly: 7, graceAnnual: 30 }, items: {} };
+        return { analyzed: {}, lastSync: null, lastCheckAt: null, settings: { graceMonthly: 7, graceAnnual: 30, ratioTh: 80 }, items: {} };
       }
       function loadStore() {
         try {
@@ -356,6 +382,26 @@
         catch (e) { showError('ブラウザへの保存に失敗しました。設定CSVを出力して控えておいてください。'); }
       }
       let store = loadStore();
+
+      // ---------- 除外する勘定科目（全事業所共通） ----------
+      const EXCLUDE_KEY = 'paymentWatch:v1:excludedAccounts';
+      // おすすめ: 単発・少額の支払が多く、毎月発生していても「請求書」ではないもの
+      const RECOMMENDED_EXCLUDE = ['会議費', '交際費', '接待交際費', '旅費交通費', '消耗品費', '事務用品費', '雑費', '仮払金', '立替金'];
+      function loadExcluded() {
+        try { const raw = localStorage.getItem(EXCLUDE_KEY); if (raw) return new Set(JSON.parse(raw)); } catch (e) {}
+        return new Set(RECOMMENDED_EXCLUDE);
+      }
+      function saveExcluded() { try { localStorage.setItem(EXCLUDE_KEY, JSON.stringify([...excludedAccounts])); } catch (e) {} }
+      let excludedAccounts = loadExcluded();
+      const isExcluded = (it) => !!it.account && excludedAccounts.has(it.account);
+      // 手動変更していない取引先の支払方法（除外科目なら対象外、それ以外は自動判定）
+      const ratioTh = () => (Number(store.settings.ratioTh) || 0) / 100;
+      const meetsRatio = (it) => (it.ratio ?? 0) + 1e-9 >= ratioTh();
+      // 一覧に表示する取引先（継続率が基準以上、または手動で設定したもの）
+      const isVisible = (it) => it.manual || meetsRatio(it);
+      // 手動変更していない取引先の支払方法
+      const defaultFreq = (it) => (isExcluded(it) || !meetsRatio(it) ? '対象外' : it.auto);
+      function applyDefaults() { Object.values(store.items).forEach((it) => { if (!it.manual) it.freq = defaultFreq(it); }); }
 
       function showError(msg) {
         const box = document.getElementById('errorBox');
@@ -402,6 +448,7 @@
         await Promise.all(Array.from({ length: Math.min(concurrency, tasks.length) }, worker));
         return results;
       }
+      const dealCache = {};
       // 月単位に分割して並列取得（ページ送りが深くならないので速く安定する）
       async function fetchExpenseDeals(start, end, onProgress) {
         const chunks = [];
@@ -413,7 +460,15 @@
           chunks.push({ s: fmt(s), e: fmt(e) });
           cur = new Date(cur.getFullYear(), cur.getMonth() + 1, 1);
         }
-        const tasks = chunks.map((c) => () => fetchAllPages(`/deals?company_id=${companyId}&type=expense&start_issue_date=${c.s}&end_issue_date=${c.e}`, 'deals'));
+        // 過去の月はこの画面を開いている間キャッシュする（毎月→毎年の順に分析しても重複取得しない）
+        const todayStr = fmt(today0());
+        const tasks = chunks.map((c) => async () => {
+          const key = `${c.s}_${c.e}`;
+          if (dealCache[key]) return dealCache[key];
+          const res = await fetchAllPages(`/deals?company_id=${companyId}&type=expense&start_issue_date=${c.s}&end_issue_date=${c.e}`, 'deals');
+          if (c.e < todayStr) dealCache[key] = res;
+          return res;
+        });
         const res = await runPool(tasks, 3, onProgress);
         return res.flat();
       }
@@ -443,23 +498,56 @@
         if (acc && accountMap && accountMap[acc]) { item.accCount[accountMap[acc]] = (item.accCount[accountMap[acc]] || 0) + 1; }
         return true;
       }
-      function classify(item, today) {
-        const recent = new Set();
-        for (let i = 1; i <= 12; i++) recent.add(ymKey(new Date(today.getFullYear(), today.getMonth() - i, 1)));
-        const cnt = item.months.filter((m) => recent.has(m)).length;
-        if (cnt >= 9) return { auto: '毎月', note: `直近12ヶ月中${cnt}ヶ月` };
-        const dates = item.history.map((h) => parse(h.d));
-        let yearly = false;
-        for (let i = 0; i < dates.length && !yearly; i++) {
-          for (let j = i + 1; j < dates.length; j++) {
-            const g = dayDiff(dates[j], dates[i]);
-            if (g >= 330 && g <= 400) { yearly = true; break; }
-          }
+      const monthsBetween = (a, b) => (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth());
+
+      // 毎月：直近13ヶ月で、最初の支払月〜最後の支払月のうち支払があった月の割合
+      function monthlyStats(months, today) {
+        const winStart = ymKey(new Date(today.getFullYear(), today.getMonth() - 12, 1));
+        const inWin = months.filter((m) => m >= winStart).sort();
+        if (inWin.length < 2) return null;
+        const set = new Set(inWin);
+        const lastD = parse(inWin[inWin.length - 1] + '-01');
+        let d = parse(inWin[0] + '-01'), span = 0, hits = 0, run = 0, streak = 0;
+        while (d <= lastD) {
+          span++;
+          if (set.has(ymKey(d))) { hits++; run++; streak = Math.max(streak, run); } else run = 0;
+          d = new Date(d.getFullYear(), d.getMonth() + 1, 1);
         }
-        if (yearly && cnt <= 2) return { auto: '毎年', note: '約1年間隔' };
-        if (item.history.length <= 1) return { auto: '対象外', note: '1回のみ' };
-        return { auto: '対象外', note: `不定期（12ヶ月中${cnt}ヶ月）` };
+        if (streak < 2) return null; // 一度も連続していない
+        return { ratio: hits / span, note: `${hits}/${span}ヶ月`, stale: monthsBetween(lastD, today) >= 6 };
       }
+
+      // 毎年：直近25ヶ月で、約1年間隔の支払が連続しているか
+      function annualStats(history, today) {
+        const winStart = new Date(today.getFullYear(), today.getMonth() - 24, 1);
+        const recentStart = new Date(today.getFullYear(), today.getMonth() - 12, 1);
+        const dates = history.map((h) => parse(h.d)).filter((d) => d >= winStart).sort((a, b) => a - b);
+        if (dates.length < 2) return null;
+        if (new Set(dates.filter((d) => d >= recentStart).map(ymKey)).size > 2) return null; // 頻繁すぎる
+        // 60日以内の支払は1回分としてまとめる
+        const reps = [];
+        dates.forEach((d) => {
+          const lastRep = reps[reps.length - 1];
+          if (!lastRep || dayDiff(d, lastRep.last) > 60) reps.push({ first: d, last: d }); else lastRep.last = d;
+        });
+        let consecutive = false;
+        for (let i = 1; i < reps.length; i++) {
+          const g = dayDiff(reps[i].first, reps[i - 1].first);
+          if (g >= 330 && g <= 400) { consecutive = true; break; }
+        }
+        if (!consecutive) return null;
+        const f = reps[0].first, lastRep = reps[reps.length - 1].first;
+        let expected = 0, hits = 0;
+        for (let k = 0; ; k++) {
+          const ann = new Date(f.getFullYear() + k, f.getMonth(), f.getDate());
+          if (dayDiff(ann, lastRep) > 45) break;
+          expected++;
+          if (reps.some((r) => Math.abs(dayDiff(r.first, ann)) <= 45)) hits++;
+        }
+        return { ratio: hits / expected, note: `${hits}/${expected}年`, stale: false };
+      }
+      const statsFor = (kind, item, today) => (kind === '毎年' ? annualStats(item.history, today) : monthlyStats(item.months, today));
+
       function recompute(item, today) {
         const h = item.history;
         if (!h.length) return;
@@ -471,9 +559,18 @@
         item.month = parse(last.d).getMonth() + 1;
         const accs = Object.entries(item.accCount || {});
         item.account = accs.length ? accs.sort((a, b) => b[1] - a[1])[0][0] : '';
-        const c = classify(item, today);
-        item.auto = c.auto; item.autoNote = c.note;
-        if (!item.manual) item.freq = c.auto;
+        if (item.auto) {
+          const st = statsFor(item.auto, item, today);
+          if (st) { item.ratio = st.ratio; item.ratioNote = st.note; }
+        }
+        if (!item.manual) item.freq = defaultFreq(item);
+      }
+      function mergeHistory(target, src) {
+        src.history.forEach((h) => { if (!target.history.some((x) => x.id === h.id)) target.history.push(h); });
+        target.history.sort((x, y) => (x.d < y.d ? -1 : x.d > y.d ? 1 : 0));
+        if (target.history.length > HISTORY_CAP) target.history = target.history.slice(-HISTORY_CAP);
+        target.months = [...new Set([...target.months, ...src.months])].sort().slice(-MONTHS_CAP);
+        target.accCount = src.accCount;
       }
       function newItem(id, name) {
         return { id, name: name || `取引先ID ${id}`, history: [], months: [], accCount: {}, freq: '対象外', manual: false };
@@ -541,10 +638,13 @@
         if (!items.length) { section.classList.add('hidden'); return; }
         section.classList.remove('hidden');
         document.getElementById('checkSection').classList.remove('hidden');
+        renderExcludePanel(items);
 
-        const hideOnce = document.getElementById('hideOnce').checked;
+        const showBelow = document.getElementById('showBelow').checked;
+        const hiddenCount = items.filter((it) => !isVisible(it)).length;
+        document.getElementById('hiddenNote').textContent = hiddenCount ? `継続率が基準未満: ${hiddenCount}件${showBelow ? '' : '（非表示）'}` : '';
         const q = document.getElementById('masterSearch').value.trim().toLowerCase();
-        const base = items.filter((it) => !(hideOnce && it.history.length <= 1 && it.freq === '対象外'));
+        const base = items.filter((it) => showBelow || isVisible(it));
         document.getElementById('cntAll').textContent = base.length;
         document.getElementById('cntM').textContent = base.filter((i) => i.freq === '毎月').length;
         document.getElementById('cntY').textContent = base.filter((i) => i.freq === '毎年').length;
@@ -556,7 +656,6 @@
           .filter((it) => !q || it.name.toLowerCase().includes(q) || (it.account || '').toLowerCase().includes(q))
           .sort((a, b) => order[a.freq] - order[b.freq] || b.avg - a.avg);
 
-        const span = store.rangeMonths || 13;
         const tbody = document.getElementById('masterBody');
         if (!rows.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="8">条件に合う取引先はありません。</td></tr>'; return; }
         tbody.innerHTML = rows.map((it) => `
@@ -570,12 +669,38 @@
             <td><b style="color:var(--text-main);">${esc(it.name)}</b></td>
             <td>${esc(it.account || '—')}</td>
             <td class="num">${yen(it.avg)}</td>
-            <td class="nowrap">${monthsHtml(it, span)}</td>
+            <td class="nowrap">${monthsHtml(it, it.auto === '毎年' ? 25 : 13)}</td>
             <td class="nowrap">${esc(timingText(it))}</td>
             <td class="nowrap">${it.lastDate ? fmtJp(parse(it.lastDate)) : '—'}</td>
-            <td class="nowrap" style="font-size:12px; color:var(--text-muted);">${esc(it.auto)}<span class="sub">${esc(it.autoNote || '')}</span></td>
+            <td class="nowrap" style="font-size:12px; color:var(--text-muted);">${esc(it.auto)}<span class="sub">継続率 ${Math.round((it.ratio || 0) * 100)}%（${esc(it.ratioNote || '')}）</span>${isExcluded(it) ? '<span class="sub" style="color:#991b1b;">除外する勘定科目</span>' : ''}${!meetsRatio(it) ? '<span class="sub" style="color:#b45309;">基準未満</span>' : ''}</td>
           </tr>`).join('');
       }
+      function renderExcludePanel(items) {
+        // この事業所に出てくる勘定科目と、その科目が主な取引先の数
+        const counts = {};
+        items.forEach((it) => { if (it.account) counts[it.account] = (counts[it.account] || 0) + 1; });
+        const names = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
+        const chip = (n) => `<label class="acc-chip ${excludedAccounts.has(n) ? 'on' : ''}"><input type="checkbox" data-acc="${esc(n)}" ${excludedAccounts.has(n) ? 'checked' : ''}>${esc(n)}<span class="n">${counts[n]}</span>${RECOMMENDED_EXCLUDE.includes(n) ? '<span class="rec">おすすめ</span>' : ''}</label>`;
+        const on = names.filter((n) => excludedAccounts.has(n));
+        const off = names.filter((n) => !excludedAccounts.has(n));
+        document.getElementById('excludeLists').innerHTML =
+          `<div class="acc-group-title">除外中（${on.length}科目）</div><div class="acc-list">${on.map(chip).join('') || '<span class="exclude-help">なし</span>'}</div>` +
+          `<div class="acc-group-title">チェック対象（${off.length}科目）</div><div class="acc-list">${off.map(chip).join('') || '<span class="exclude-help">なし</span>'}</div>`;
+        const affected = items.filter((it) => isExcluded(it)).length;
+        document.getElementById('excludeSummary').textContent = `${on.length}科目を除外中（取引先 ${affected}件）`;
+      }
+      document.getElementById('excludeLists').addEventListener('change', (e) => {
+        const cb = e.target.closest('input[data-acc]'); if (!cb) return;
+        if (cb.checked) excludedAccounts.add(cb.dataset.acc); else excludedAccounts.delete(cb.dataset.acc);
+        saveExcluded(); applyDefaults(); saveStore(); renderMeta(); renderMaster();
+        if (lastResults) renderResults();
+      });
+      document.getElementById('resetExcludeBtn').addEventListener('click', () => {
+        excludedAccounts = new Set(RECOMMENDED_EXCLUDE);
+        saveExcluded(); applyDefaults(); saveStore(); renderMeta(); renderMaster();
+        if (lastResults) renderResults();
+      });
+
       document.getElementById('masterBody').addEventListener('click', (e) => {
         const btn = e.target.closest('.freq-btn');
         if (!btn) return;
@@ -583,7 +708,7 @@
         const it = store.items[id];
         if (!it) return;
         it.freq = btn.dataset.freq;
-        it.manual = it.freq !== it.auto;
+        it.manual = it.freq !== defaultFreq(it);
         saveStore();
         renderMaster();
         if (lastResults) renderResults();
@@ -595,22 +720,39 @@
         renderMaster();
       });
       document.getElementById('masterSearch').addEventListener('input', renderMaster);
-      document.getElementById('hideOnce').addEventListener('change', renderMaster);
+      document.getElementById('showBelow').addEventListener('change', renderMaster);
 
       function renderMeta() {
         const a = document.getElementById('analyzeMeta');
         const c = document.getElementById('checkMeta');
-        if (store.analyzedAt) {
-          const n = itemsArray();
-          a.innerHTML = `最終分析: ${esc(fmtJp(new Date(store.analyzedAt)))}（直近${store.rangeMonths}ヶ月）／ 取引先 ${n.length}件（毎月 ${n.filter((i) => i.freq === '毎月').length}件、毎年 ${n.filter((i) => i.freq === '毎年').length}件）`
-            + (store.noPartnerCount ? `<br>取引先が未設定のため集計できなかった取引: ${store.noPartnerCount}件` : '');
-          const ageDays = dayDiff(today0(), new Date(store.analyzedAt));
-          if (ageDays > 180) a.innerHTML += '<br><b style="color:#b45309;">前回の分析から半年以上たっています。再分析をおすすめします。</b>';
-        } else {
-          a.textContent = 'まだ分析していません。';
-        }
+        const lines = ['毎月', '毎年'].map((k) => {
+          const info = store.analyzed[k];
+          if (!info) return `${k}: まだ分析していません`;
+          const n = itemsArray().filter((it) => it.auto === k && isVisible(it)).length;
+          let line = `${k}: ${fmtJp(new Date(info.at))}に分析（直近${info.months}ヶ月）／ 一覧 ${n}件`;
+          if (info.noPartner) line += `／ 取引先未設定の取引 ${info.noPartner}件`;
+          if (dayDiff(today0(), new Date(info.at)) > 180) line += ' <b style="color:#b45309;">半年以上たっています。再分析をおすすめします</b>';
+          return line;
+        });
+        a.innerHTML = lines.join('<br>');
         c.textContent = store.lastCheckAt ? `前回チェック: ${fmtJp(new Date(store.lastCheckAt))}` : '';
       }
+
+      // 分析する頻度の切り替え・継続率の基準
+      let analyzeKind = '毎月';
+      document.getElementById('kindSelect').addEventListener('click', (e) => {
+        const b = e.target.closest('button'); if (!b) return;
+        analyzeKind = b.dataset.k;
+        document.querySelectorAll('#kindSelect button').forEach((x) => { x.classList.toggle('active', x === b); x.setAttribute('aria-pressed', x === b); });
+        document.getElementById('runAnalyzeBtn').textContent = `${analyzeKind}の支払を分析する`;
+      });
+      const ratioInput = document.getElementById('ratioTh');
+      ratioInput.addEventListener('change', () => {
+        store.settings.ratioTh = Math.min(100, Math.max(0, Number(ratioInput.value) || 0));
+        ratioInput.value = store.settings.ratioTh;
+        applyDefaults(); saveStore(); renderMeta(); renderMaster();
+        if (lastResults) renderResults();
+      });
 
       // ---------- 1. 分析 ----------
       document.getElementById('runAnalyzeBtn').addEventListener('click', async () => {
@@ -621,7 +763,8 @@
         showError('');
         btn.disabled = true; loading.classList.remove('hidden'); bar.style.width = '0%';
         try {
-          const months = Number(document.getElementById('rangeSelect').value);
+          const kind = analyzeKind;
+          const months = kind === '毎年' ? 25 : 13;
           const today = today0();
           const start = new Date(today.getFullYear(), today.getMonth() - (months - 1), 1);
 
@@ -635,29 +778,39 @@
           });
 
           text.textContent = `${deals.length.toLocaleString()}件の取引を集計中...`;
-          const old = store.items || {};
-          const items = {};
+          const fetched = {};
           let noPartner = 0;
           deals.forEach((d) => {
             if (!d.partner_id) { noPartner++; return; }
             const id = String(d.partner_id);
-            if (!items[id]) items[id] = newItem(id, partnerMap[d.partner_id]);
-            addDealToItem(items[id], d, accountMap);
+            if (!fetched[id]) fetched[id] = newItem(id, partnerMap[d.partner_id]);
+            addDealToItem(fetched[id], d, accountMap);
           });
-          Object.values(items).forEach((it) => {
-            const prev = old[it.id];
-            if (prev && prev.manual) { it.manual = true; it.freq = prev.freq; }
-            recompute(it, today);
-            if (it.manual && it.freq === it.auto) it.manual = false;
-          });
-          // 期間内に取引がなくても、手動で毎年に設定していた取引先は残す（数年ぶりの請求に備える）
-          Object.values(old).forEach((prev) => { if (!items[prev.id] && prev.manual && prev.freq !== '対象外') items[prev.id] = prev; });
 
-          store.items = items;
-          store.rangeMonths = months;
-          store.analyzedAt = new Date().toISOString();
-          store.lastSync = fmt(today);
-          store.noPartnerCount = noPartner;
+          const items = store.items;
+          Object.values(fetched).forEach((tmp) => {
+            const st = statsFor(kind, tmp, today);
+            const existing = items[tmp.id];
+            if (!st || st.stale) {
+              // この頻度の候補ではなくなった（手動設定したものは残す）
+              if (existing && existing.auto === kind && !existing.manual) delete items[tmp.id];
+              return;
+            }
+            // 毎年として登録済みの取引先は、毎月の継続率が基準以上のときだけ毎月に切り替える
+            if (kind === '毎月' && existing && existing.auto === '毎年' && st.ratio < ratioTh()) return;
+            const it = existing || newItem(tmp.id, tmp.name);
+            it.name = tmp.name;
+            mergeHistory(it, tmp);
+            it.auto = kind; it.ratio = st.ratio; it.ratioNote = st.note;
+            items[it.id] = it;
+            recompute(it, today);
+            if (it.manual && it.freq === defaultFreq(it)) it.manual = false;
+          });
+          // 期間内に取引がなかった同じ頻度の取引先は外す（手動設定したものは残す）
+          Object.values(items).forEach((it) => { if (it.auto === kind && !it.manual && !fetched[it.id]) delete items[it.id]; });
+
+          store.analyzed[kind] = { at: new Date().toISOString(), months, noPartner };
+          if (!store.lastSync) store.lastSync = fmt(today);
           saveStore();
           lastResults = null;
           document.getElementById('checkResult').classList.add('hidden');
@@ -692,7 +845,7 @@
         const loading = document.getElementById('checkLoading');
         const text = document.getElementById('checkLoadingText');
         showError('');
-        if (!itemsArray().length) { showError('先に「過去の支払を分析する」を実行してください。'); return; }
+        if (!itemsArray().length) { showError('先に「支払頻度を分析する」を実行してください。'); return; }
         btn.disabled = true; loading.classList.remove('hidden');
         try {
           const today = today0();
@@ -770,7 +923,7 @@
             <td class="nowrap">${fmtJp(ev.next)}</td>
             <td class="nowrap">${fmtJp(parse(it.lastDate))}</td>
             <td class="nowrap ${ev.status === 'missing' ? 'overdue' : ''}">${esc(statusText(ev))}</td>
-            <td class="nowrap">${monthsHtml(it, 13)}</td>
+            <td class="nowrap">${monthsHtml(it, it.auto === '毎年' ? 25 : 13)}</td>
           </tr>`).join('');
       }
       document.getElementById('resultFilter').addEventListener('click', (e) => {
@@ -811,9 +964,9 @@
       document.getElementById('exportMasterBtn').addEventListener('click', () => {
         const items = itemsArray();
         if (!items.length) { alert('出力するデータがありません。'); return; }
-        let csv = '取引先ID,取引先名,支払方法,自動判定,手動変更,主な勘定科目,平均金額,通常の登録日,登録月（毎年）,最終登録日,登録月数\n';
+        let csv = '取引先ID,取引先名,支払方法,分析結果,継続率,手動変更,除外科目,主な勘定科目,平均金額,通常の登録日,登録月（毎年）,最終登録日\n';
         items.sort((a, b) => a.name.localeCompare(b.name, 'ja')).forEach((it) => {
-          csv += [it.id, it.name, it.freq, it.auto, it.manual ? 'あり' : '', it.account, Math.round(it.avg), it.day, it.month, it.lastDate, it.months.length].map(csvCell).join(',') + '\n';
+          csv += [it.id, it.name, it.freq, it.auto, `${Math.round((it.ratio || 0) * 100)}%`, it.manual ? 'あり' : '', isExcluded(it) ? 'はい' : '', it.account, Math.round(it.avg), it.day, it.month, it.lastDate].map(csvCell).join(',') + '\n';
         });
         download(csv, `支払方法設定_${safeName}_${stamp()}.csv`);
       });
@@ -845,7 +998,7 @@
         let applied = 0, skipped = 0;
         rows.forEach((r) => {
           const it = store.items[r[iId]]; const f = r[iF];
-          if (it && ['毎月', '毎年', '対象外'].includes(f)) { it.freq = f; it.manual = f !== it.auto; applied++; } else if (r[iId]) skipped++;
+          if (it && ['毎月', '毎年', '対象外'].includes(f)) { it.freq = f; it.manual = f !== defaultFreq(it); applied++; } else if (r[iId]) skipped++;
         });
         saveStore(); renderMaster(); if (lastResults) renderResults();
         alert(`${applied}件の支払方法を反映しました。` + (skipped ? `\n（この事業所に見つからない取引先 ${skipped}件はスキップしました）` : ''));
@@ -862,8 +1015,9 @@
       });
 
       // ---------- 初期表示 ----------
-      document.getElementById('rangeSelect').value = String(store.rangeMonths || 13);
+      ratioInput.value = store.settings.ratioTh;
       syncGraceInputs();
+      applyDefaults();
       renderMeta();
       renderMaster();
     })();
