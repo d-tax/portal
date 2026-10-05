@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>支払登録漏れチェッカー - freee拡張ポータル</title>
+  <link rel="stylesheet" href="../css/common.css">
+  <style>
+    .app-header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+    .app-tag { font-size: 12px; color: var(--text-muted); background: var(--surface); border: 1px solid var(--border); padding: 6px 12px; border-radius: 6px; }
+
+    /* メニュー */
+    .menu-container { position: relative; }
+    .hamburger-btn { background: var(--surface); border: 1px solid var(--border); padding: 8px 12px; border-radius: 8px; cursor: pointer; display: flex; flex-direction: column; gap: 4px; align-items: center; justify-content: center; width: 40px; height: 40px; }
+    .hamburger-btn span { display: block; width: 18px; height: 2px; background: var(--text-main); border-radius: 2px; }
+    .dropdown-menu { display: none; position: absolute; right: 0; top: calc(100% + 8px); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; box-shadow: var(--shadow-md); padding: 6px; z-index: 100; min-width: 200px; }
+    .dropdown-menu.show { display: block; }
+    .dropdown-item { width: 100%; background: transparent; border: none; padding: 10px 12px; text-align: left; font-size: 13px; color: var(--text-main); cursor: pointer; border-radius: 6px; display: flex; align-items: center; gap: 8px; font-weight: 500; transition: background 0.2s; }
+    .dropdown-item img { width: 16px; height: 16px; object-fit: contain; }
+    .dropdown-item:hover { background: var(--bg); }
+
+    .btn-secondary { background: var(--surface); border: 1px solid var(--border); color: var(--text-main); padding: 11px 20px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; width: 100%; text-align: center; transition: all 0.2s; box-shadow: var(--shadow-sm); }
+    .btn-secondary:hover { background: var(--bg); border-color: var(--border-hover); box-shadow: var(--shadow-md); }
+    .btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-small { padding: 9px 16px; font-size: 13px; width: auto; display: inline-flex; align-items: center; gap: 8px; }
+    .btn-small img { width: 16px; height: 16px; object-fit: contain; }
+
+    .info-box { background: var(--primary-light); border: 1px solid rgba(37, 99, 235, 0.2); color: var(--text-main); padding: 14px 16px; border-radius: 8px; font-size: 13px; margin-top: 16px; line-height: 1.6; }
+    .info-box ul { margin: 6px 0 0 20px; padding: 0; }
+
+    .loading-box { text-align: center; padding: 40px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-top: 16px; box-shadow: var(--shadow-sm); }
+    .spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 12px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .progress-track { height: 6px; background: var(--bg); border-radius: 3px; margin: 12px auto 0; max-width: 320px; overflow: hidden; }
+    .progress-fill { height: 100%; width: 0; background: var(--primary); transition: width 0.2s; }
+
+    .control-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 14px; }
+    .control-row label { font-size: 13px; color: var(--text-muted); display: inline-flex; align-items: center; gap: 6px; }
+    .control-row select, .control-row input[type="number"], .control-row input[type="search"] {
+      font-size: 13px; padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text-main);
+    }
+    .control-row input[type="number"] { width: 64px; }
+    .control-row input[type="search"] { min-width: 200px; }
+    .meta-line { font-size: 12px; color: var(--text-muted); margin-top: 10px; line-height: 1.7; }
+
+    .summary { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin: 16px 0; box-shadow: var(--shadow-sm); }
+    .summary-stats { display: flex; flex-wrap: wrap; gap: 28px; }
+    .stat .num { font-size: 24px; font-weight: 700; display: block; font-variant-numeric: tabular-nums; }
+    .stat .num.danger { color: var(--danger-text, #b91c1c); }
+    .stat .num.warn { color: #b45309; }
+    .stat .num.okc { color: #047857; }
+    .stat .lbl { font-size: 12px; color: var(--text-muted); }
+
+    /* セグメント（フィルタ・支払方法） */
+    .seg { display: inline-flex; background: var(--bg); padding: 3px; border-radius: 8px; border: 1px solid var(--border); gap: 2px; }
+    .seg button { background: transparent; border: 1px solid transparent; padding: 5px 12px; font-size: 12px; font-weight: 600; border-radius: 6px; cursor: pointer; color: var(--text-muted); white-space: nowrap; }
+    .seg button:hover { color: var(--text-main); }
+    .seg button.active { background: var(--surface); color: var(--text-main); border-color: var(--border); box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+    .seg .cnt { font-weight: 500; margin-left: 4px; opacity: 0.75; }
+
+    .freq-group { display: inline-flex; flex-direction: column; gap: 3px; background: var(--bg); padding: 4px; border-radius: 8px; border: 1px solid var(--border); width: 86px; }
+    .freq-btn { background: transparent; border: 1px solid transparent; padding: 4px 6px; font-size: 12px; font-weight: 600; border-radius: 6px; cursor: pointer; color: var(--text-muted); width: 100%; }
+    .freq-btn:hover { color: var(--text-main); }
+    .freq-btn.active[data-freq="毎月"] { background: #eff6ff; color: #1e40af; border-color: #3b82f6; }
+    .freq-btn.active[data-freq="毎年"] { background: #f5f3ff; color: #5b21b6; border-color: #8b5cf6; }
+    .freq-btn.active[data-freq="対象外"] { background: var(--surface); color: var(--text-main); border-color: var(--border-hover, #cbd5e1); }
+
+    .all-table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow-sm); }
+    .all-table th, .all-table td { padding: 11px 14px; text-align: left; font-size: 13px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .all-table th { background: var(--bg); font-weight: 600; color: var(--text-muted); white-space: nowrap; }
+    .all-table td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .all-table td.nowrap { white-space: nowrap; }
+    .table-wrap { overflow-x: auto; max-height: 640px; overflow-y: auto; border-radius: var(--radius); }
+    .table-wrap thead th { position: sticky; top: 0; z-index: 1; }
+    .empty-row td { text-align: center; color: var(--text-muted); padding: 30px; }
+    .sub { display: block; font-size: 11px; color: var(--text-muted); margin-top: 2px; font-weight: 400; }
+    .manual-mark { font-size: 10px; color: var(--text-muted); display: block; text-align: center; margin-top: 3px; }
+
+    /* 登録履歴（月ごとのマス） */
+    .months { display: inline-flex; gap: 2px; align-items: center; }
+    .months i { display: block; width: 8px; height: 14px; border-radius: 2px; background: var(--bg); border: 1px solid var(--border); }
+    .months i.on { background: var(--primary); border-color: var(--primary); }
+    .months i.jan { margin-left: 5px; }
+    .months i.cur { outline: 1px dashed var(--text-muted); outline-offset: 1px; }
+    .months-legend { font-size: 11px; color: var(--text-muted); display: flex; justify-content: space-between; margin-top: 3px; }
+
+    .badge { display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap; border: 1px solid transparent; }
+    .badge.missing { background: #fef2f2; color: #991b1b; border-color: #fca5a5; }
+    .badge.grace { background: #fffbeb; color: #92400e; border-color: #fcd34d; }
+    .badge.soon { background: #f8fafc; color: #475569; border-color: #cbd5e1; }
+    .badge.ok { background: #ecfdf5; color: #065f46; border-color: #6ee7b7; }
+    .freq-chip { font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 4px; }
+    .freq-chip.m { background: #eff6ff; color: #1e40af; }
+    .freq-chip.y { background: #f5f3ff; color: #5b21b6; }
+    .overdue { color: #991b1b; font-weight: 700; }
+
+    .section-gap { margin-top: 20px; }
+    .actions-right { margin-top: 16px; display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+    .hidden { display: none !important; }
+    input[type="file"].hidden-input { display: none; }
+    :focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+  </style>
+</head>
+<body>
+  <div class="cursor-glow" id="cursorGlow"></div>
+  <div class="cursor-dot" id="cursorDot"></div>
+
+  <div class="page">
+    <header>
+      <div class="header-left">
+        <img src="../images/360097.png" alt="D-Tax Logo" class="header-logo">
+        <div class="header-title-area">
+          <h1>支払登録漏れチェッカー</h1>
+          <p>対象事業所: <b id="currentCompanyLabel" style="color:var(--text-main);">読み込み中...</b></p>
+        </div>
+      </div>
+      <div class="menu-container">
+        <button class="hamburger-btn" id="hamburgerBtn" aria-label="メニューを開く" type="button">
+          <span></span><span></span><span></span>
+        </button>
+        <div class="dropdown-menu" id="dropdownMenu">
+          <button class="dropdown-item" id="resetBtn" type="button">この事業所の設定を初期化</button>
+          <button class="dropdown-item" id="logoutBtn" type="button"><img src="../images/logout.png" alt=""> ログアウト</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="app-header-bar">
+      <a href="../index.html" class="btn-nav">← ポータルへ戻る</a>
+      <span class="app-tag">使用中：支払登録漏れチェッカー</span>
+    </div>
+
+    <!-- 1. 分析 -->
+    <div class="step-box">
+      <div class="step-title" style="margin-bottom: 6px;">1. 過去の支払を分析する</div>
+      <div class="step-desc">過去の支出取引を取引先ごとに集計し、毎月・毎年の支払を自動で判定します。初回と、半年に1回程度の見直し時に実行してください。手動で変更した支払方法は再分析しても保持されます。</div>
+      <div class="control-row">
+        <label>分析期間
+          <select id="rangeSelect">
+            <option value="13">直近13ヶ月（標準）</option>
+            <option value="25">直近25ヶ月（年1回の支払を確実に拾う）</option>
+          </select>
+        </label>
+      </div>
+      <button class="btn-secondary" id="runAnalyzeBtn" type="button">過去の支払を分析する</button>
+      <div class="meta-line" id="analyzeMeta"></div>
+
+      <div class="info-box">
+        <b>【自動判定の条件】</b>
+        <ul>
+          <li><b>毎月:</b> 直近12ヶ月のうち9ヶ月以上で取引がある取引先</li>
+          <li><b>毎年:</b> 約1年（330〜400日）の間隔で取引があり、直近12ヶ月の取引が2ヶ月以内の取引先</li>
+          <li><b>対象外:</b> 上記以外（不定期・1回のみ）。必要に応じて手動で「毎月」「毎年」に変更できます</li>
+        </ul>
+        取引先が未設定の取引は集計対象外です。結果はこのブラウザに事業所ごとに保存され、次回からは差分だけを取得します。
+      </div>
+
+      <div id="analyzeLoading" class="loading-box hidden">
+        <div class="spinner"></div>
+        <div style="font-size: 13px; font-weight: 600; color: var(--text-main);" id="analyzeLoadingText">取引データを取得中...</div>
+        <div class="progress-track"><div class="progress-fill" id="analyzeProgress"></div></div>
+      </div>
+    </div>
+
+    <!-- 2. 支払方法の設定 -->
+    <div class="step-box section-gap hidden" id="masterSection">
+      <div class="step-title" style="margin-bottom: 6px;">2. 支払方法を確認する</div>
+      <div class="step-desc">自動判定の結果を確認し、必要に応じて支払方法を変更してください。変更はすぐに保存されます。</div>
+
+      <div class="control-row">
+        <div class="seg" id="masterFilter">
+          <button type="button" data-f="all" class="active">すべて<span class="cnt" id="cntAll"></span></button>
+          <button type="button" data-f="毎月">毎月<span class="cnt" id="cntM"></span></button>
+          <button type="button" data-f="毎年">毎年<span class="cnt" id="cntY"></span></button>
+          <button type="button" data-f="対象外">対象外<span class="cnt" id="cntX"></span></button>
+        </div>
+        <input type="search" id="masterSearch" placeholder="取引先名・勘定科目で絞り込み" aria-label="取引先名・勘定科目で絞り込み">
+        <label><input type="checkbox" id="hideOnce" checked> 取引が1回だけの取引先を隠す</label>
+      </div>
+
+      <div class="table-wrap">
+        <table class="all-table">
+          <thead>
+            <tr>
+              <th style="width: 100px; text-align: center;">支払方法</th>
+              <th>取引先</th>
+              <th>主な勘定科目</th>
+              <th style="text-align: right;">平均金額</th>
+              <th>登録履歴</th>
+              <th>通常の登録時期</th>
+              <th>最終登録日</th>
+              <th>自動判定</th>
+            </tr>
+          </thead>
+          <tbody id="masterBody"></tbody>
+        </table>
+      </div>
+
+      <div class="actions-right">
+        <button class="btn-secondary btn-small" id="importBtn" type="button">設定CSVを読み込む</button>
+        <input type="file" id="importFile" accept=".csv,text/csv" class="hidden-input">
+        <button class="btn-secondary btn-small" id="exportMasterBtn" type="button"><img src="../images/dounload.png" alt="">支払方法の設定をCSV出力</button>
+      </div>
+    </div>
+
+    <!-- 3. チェック -->
+    <div class="step-box section-gap hidden" id="checkSection">
+      <div class="step-title" style="margin-bottom: 6px;">3. 登録漏れをチェックする</div>
+      <div class="step-desc">前回チェック以降の取引だけを取得して照合します。漏れが疑われる取引先は、取引先を指定してもう一度確認してから表示するため、発生日をさかのぼって登録された取引も見逃しません。</div>
+
+      <div class="control-row">
+        <label>猶予日数（毎月） <input type="number" id="graceMonthly" min="0" max="60"> 日</label>
+        <label>猶予日数（毎年） <input type="number" id="graceAnnual" min="0" max="180"> 日</label>
+      </div>
+      <button class="btn-secondary" id="runCheckBtn" type="button">登録漏れをチェックする</button>
+      <div class="meta-line" id="checkMeta"></div>
+
+      <div id="checkLoading" class="loading-box hidden">
+        <div class="spinner"></div>
+        <div style="font-size: 13px; font-weight: 600; color: var(--text-main);" id="checkLoadingText">照合中...</div>
+      </div>
+
+      <div id="checkResult" class="hidden">
+        <div class="summary">
+          <div class="summary-stats">
+            <div class="stat"><span class="num danger" id="statMissing">0</span><span class="lbl">漏れの疑い</span></div>
+            <div class="stat"><span class="num warn" id="statGrace">0</span><span class="lbl">予定日を過ぎた（猶予内）</span></div>
+            <div class="stat"><span class="num" id="statSoon">0</span><span class="lbl">まもなく予定日</span></div>
+            <div class="stat"><span class="num okc" id="statOk">0</span><span class="lbl">登録済み</span></div>
+          </div>
+        </div>
+
+        <div class="control-row">
+          <div class="seg" id="resultFilter">
+            <button type="button" data-f="missing" class="active">漏れの疑い</button>
+            <button type="button" data-f="attention">要注意すべて</button>
+            <button type="button" data-f="all">すべて</button>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table class="all-table">
+            <thead>
+              <tr>
+                <th>判定</th>
+                <th>取引先</th>
+                <th>主な勘定科目</th>
+                <th style="text-align: right;">平均金額</th>
+                <th>予定日</th>
+                <th>最終登録日</th>
+                <th>状況</th>
+                <th>登録履歴</th>
+              </tr>
+            </thead>
+            <tbody id="resultBody"></tbody>
+          </table>
+        </div>
+
+        <div class="actions-right">
+          <div class="menu-container" style="display: inline-block;">
+            <button class="btn-secondary btn-small" id="exportMenuBtn" type="button"><img src="../images/dounload.png" alt="">チェック結果をCSV出力</button>
+            <div class="dropdown-menu" id="exportDropdownMenu" style="min-width: 200px;">
+              <button class="dropdown-item" id="exportMissingBtn" type="button">漏れの疑いのみを出力</button>
+              <button class="dropdown-item" id="exportAttentionBtn" type="button">要注意すべてを出力</button>
+              <button class="dropdown-item" id="exportAllResultBtn" type="button">すべての項目を出力</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="error-box" id="errorBox"></div>
+  </div>
+
+  <script>
+    (function () {
+      "use strict";
+
+      // ---------- カーソル演出（ポータル共通） ----------
+      const cursorDot = document.getElementById('cursorDot');
+      const cursorGlow = document.getElementById('cursorGlow');
+      let mouseX = 0, mouseY = 0, glowX = 0, glowY = 0;
+      window.addEventListener('mousemove', (e) => {
+        mouseX = e.clientX; mouseY = e.clientY;
+        cursorDot.style.opacity = '1'; cursorGlow.style.opacity = '1';
+        cursorDot.style.left = `${mouseX}px`; cursorDot.style.top = `${mouseY}px`;
+      });
+      (function animateGlow() {
+        glowX += (mouseX - glowX) * 0.15; glowY += (mouseY - glowY) * 0.15;
+        cursorGlow.style.left = `${glowX}px`; cursorGlow.style.top = `${glowY}px`;
+        requestAnimationFrame(animateGlow);
+      })();
+      window.addEventListener('click', (e) => {
+        const ripple = document.createElement('div');
+        ripple.className = 'ripple-wave';
+        ripple.style.left = `${e.clientX}px`; ripple.style.top = `${e.clientY}px`;
+        document.body.appendChild(ripple);
+        setTimeout(() => ripple.remove(), 800);
+      });
+
+      // ---------- メニュー ----------
+      const dropdownMenu = document.getElementById('dropdownMenu');
+      const exportDropdownMenu = document.getElementById('exportDropdownMenu');
+      document.getElementById('hamburgerBtn').addEventListener('click', (e) => { e.stopPropagation(); dropdownMenu.classList.toggle('show'); });
+      document.getElementById('exportMenuBtn').addEventListener('click', (e) => { e.stopPropagation(); exportDropdownMenu.classList.toggle('show'); });
+      window.addEventListener('click', () => { dropdownMenu.classList.remove('show'); exportDropdownMenu.classList.remove('show'); });
+      dropdownMenu.addEventListener('click', (e) => e.stopPropagation());
+      exportDropdownMenu.addEventListener('click', (e) => e.stopPropagation());
+      document.getElementById('logoutBtn').addEventListener('click', () => {
+        if (confirm('ログアウトしますか？')) { sessionStorage.clear(); window.location.href = '../index.html'; }
+      });
+
+      // ---------- 認証情報 ----------
+      const token = sessionStorage.getItem('access_token');
+      const companyId = sessionStorage.getItem('company_id');
+      const companyName = sessionStorage.getItem('company_name') || '';
+      if (!token || !companyId) {
+        alert('ログイン情報または事業所選択が失われました。ポータルに戻ります。');
+        window.location.href = '../index.html';
+        return;
+      }
+      document.getElementById('currentCompanyLabel').textContent = companyName;
+
+      // ---------- 日付ユーティリティ ----------
+      const pad = (n) => String(n).padStart(2, '0');
+      const fmt = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+      const fmtJp = (d) => `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())}`;
+      const parse = (s) => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+      const ymKey = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
+      const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+      const daysInMonth = (y, m0) => new Date(y, m0 + 1, 0).getDate();
+      const dayDiff = (a, b) => Math.round((a - b) / 86400000);
+      const today0 = () => { const t = new Date(); return new Date(t.getFullYear(), t.getMonth(), t.getDate()); };
+      const dateIn = (y, m0, day) => new Date(y, m0, Math.min(day, daysInMonth(y, m0)));
+      const yen = (n) => '¥' + Math.round(n || 0).toLocaleString('ja-JP');
+      const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+      const median = (arr) => { if (!arr.length) return 1; const a = [...arr].sort((x, y) => x - y); return a[Math.floor((a.length - 1) / 2)]; };
+
+      // ---------- 保存（このブラウザ・事業所ごと） ----------
+      const STORE_KEY = `paymentWatch:v1:${companyId}`;
+      const HISTORY_CAP = 40;
+      const MONTHS_CAP = 36;
+      function defaultStore() {
+        return { analyzedAt: null, rangeMonths: 13, lastSync: null, lastCheckAt: null, noPartnerCount: 0, settings: { graceMonthly: 7, graceAnnual: 30 }, items: {} };
+      }
+      function loadStore() {
+        try {
+          const raw = localStorage.getItem(STORE_KEY);
+          if (!raw) return defaultStore();
+          const s = JSON.parse(raw);
+          return Object.assign(defaultStore(), s, { settings: Object.assign(defaultStore().settings, s.settings || {}) });
+        } catch (e) { return defaultStore(); }
+      }
+      function saveStore() {
+        try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); }
+        catch (e) { showError('ブラウザへの保存に失敗しました。設定CSVを出力して控えておいてください。'); }
+      }
+      let store = loadStore();
+
+      function showError(msg) {
+        const box = document.getElementById('errorBox');
+        box.textContent = msg;
+        box.style.display = msg ? 'block' : 'none';
+      }
+
+      // ---------- freee API ----------
+      const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+      async function callApi(endpoint) {
+        for (let attempt = 0; attempt < 5; attempt++) {
+          const res = await fetch(`https://api.freee.co.jp/api/1${endpoint}`, {
+            headers: { 'Authorization': `Bearer ${token}`, 'accept': 'application/json' }
+          });
+          if (res.ok) return await res.json();
+          if (res.status === 401) throw new Error('ログインの有効期限が切れました。ポータルから再ログインしてください。');
+          if (res.status === 429 || res.status >= 500) { await sleep(1500 * (attempt + 1)); continue; }
+          throw new Error(`APIエラー: ${res.status}`);
+        }
+        throw new Error('APIの呼び出し回数制限に達しました。しばらく待ってから再実行してください。');
+      }
+      async function fetchAllPages(baseEndpoint, key) {
+        const limit = 100;
+        let offset = 0, all = [];
+        while (true) {
+          const data = await callApi(`${baseEndpoint}&limit=${limit}&offset=${offset}`);
+          const batch = data[key] || [];
+          all = all.concat(batch);
+          if (batch.length < limit) break;
+          offset += limit;
+        }
+        return all;
+      }
+      async function runPool(tasks, concurrency, onDone) {
+        const results = new Array(tasks.length);
+        let next = 0, done = 0;
+        async function worker() {
+          while (next < tasks.length) {
+            const i = next++;
+            results[i] = await tasks[i]();
+            done++; if (onDone) onDone(done, tasks.length);
+          }
+        }
+        await Promise.all(Array.from({ length: Math.min(concurrency, tasks.length) }, worker));
+        return results;
+      }
+      // 月単位に分割して並列取得（ページ送りが深くならないので速く安定する）
+      async function fetchExpenseDeals(start, end, onProgress) {
+        const chunks = [];
+        let cur = new Date(start.getFullYear(), start.getMonth(), 1);
+        while (cur <= end) {
+          const s = cur < start ? start : cur;
+          const monthEnd = new Date(cur.getFullYear(), cur.getMonth() + 1, 0);
+          const e = monthEnd > end ? end : monthEnd;
+          chunks.push({ s: fmt(s), e: fmt(e) });
+          cur = new Date(cur.getFullYear(), cur.getMonth() + 1, 1);
+        }
+        const tasks = chunks.map((c) => () => fetchAllPages(`/deals?company_id=${companyId}&type=expense&start_issue_date=${c.s}&end_issue_date=${c.e}`, 'deals'));
+        const res = await runPool(tasks, 3, onProgress);
+        return res.flat();
+      }
+      async function fetchPartnerMap() {
+        const partners = await fetchAllPages(`/partners?company_id=${companyId}`, 'partners');
+        const m = {}; partners.forEach((p) => { m[p.id] = p.name; }); return m;
+      }
+      async function fetchAccountMap() {
+        const data = await callApi(`/account_items?company_id=${companyId}`);
+        const m = {}; (data.account_items || []).forEach((a) => { m[a.id] = a.name; }); return m;
+      }
+
+      // ---------- 集計・判定 ----------
+      function mainAccountId(deal) {
+        const det = deal.details || [];
+        if (!det.length) return null;
+        return det.reduce((a, b) => ((b.amount || 0) > (a.amount || 0) ? b : a)).account_item_id;
+      }
+      function addDealToItem(item, deal, accountMap) {
+        if (item.history.some((h) => h.id === deal.id)) return false;
+        item.history.push({ id: deal.id, d: deal.issue_date, a: deal.amount || 0 });
+        item.history.sort((x, y) => (x.d < y.d ? -1 : x.d > y.d ? 1 : 0));
+        if (item.history.length > HISTORY_CAP) item.history = item.history.slice(-HISTORY_CAP);
+        const mk = deal.issue_date.slice(0, 7);
+        if (!item.months.includes(mk)) { item.months.push(mk); item.months.sort(); if (item.months.length > MONTHS_CAP) item.months = item.months.slice(-MONTHS_CAP); }
+        const acc = mainAccountId(deal);
+        if (acc && accountMap && accountMap[acc]) { item.accCount[accountMap[acc]] = (item.accCount[accountMap[acc]] || 0) + 1; }
+        return true;
+      }
+      function classify(item, today) {
+        const recent = new Set();
+        for (let i = 1; i <= 12; i++) recent.add(ymKey(new Date(today.getFullYear(), today.getMonth() - i, 1)));
+        const cnt = item.months.filter((m) => recent.has(m)).length;
+        if (cnt >= 9) return { auto: '毎月', note: `直近12ヶ月中${cnt}ヶ月` };
+        const dates = item.history.map((h) => parse(h.d));
+        let yearly = false;
+        for (let i = 0; i < dates.length && !yearly; i++) {
+          for (let j = i + 1; j < dates.length; j++) {
+            const g = dayDiff(dates[j], dates[i]);
+            if (g >= 330 && g <= 400) { yearly = true; break; }
+          }
+        }
+        if (yearly && cnt <= 2) return { auto: '毎年', note: '約1年間隔' };
+        if (item.history.length <= 1) return { auto: '対象外', note: '1回のみ' };
+        return { auto: '対象外', note: `不定期（12ヶ月中${cnt}ヶ月）` };
+      }
+      function recompute(item, today) {
+        const h = item.history;
+        if (!h.length) return;
+        const last = h[h.length - 1];
+        item.lastDate = last.d;
+        const recentAmts = h.slice(-6).map((x) => x.a);
+        item.avg = recentAmts.reduce((a, b) => a + b, 0) / recentAmts.length;
+        item.day = median(h.slice(-12).map((x) => parse(x.d).getDate()));
+        item.month = parse(last.d).getMonth() + 1;
+        const accs = Object.entries(item.accCount || {});
+        item.account = accs.length ? accs.sort((a, b) => b[1] - a[1])[0][0] : '';
+        const c = classify(item, today);
+        item.auto = c.auto; item.autoNote = c.note;
+        if (!item.manual) item.freq = c.auto;
+      }
+      function newItem(id, name) {
+        return { id, name: name || `取引先ID ${id}`, history: [], months: [], accCount: {}, freq: '対象外', manual: false };
+      }
+
+      // ---------- 予定日の評価 ----------
+      function evaluate(item, today) {
+        if (item.freq === '対象外' || !item.lastDate) return null;
+        const last = parse(item.lastDate);
+        const g = store.settings;
+        if (item.freq === '毎月') {
+          const grace = Number(g.graceMonthly) || 0;
+          const missed = [];
+          let m = new Date(last.getFullYear(), last.getMonth() + 1, 1);
+          while (true) {
+            const exp = dateIn(m.getFullYear(), m.getMonth(), item.day);
+            if (addDays(exp, grace) < today) { missed.push(exp); m = new Date(m.getFullYear(), m.getMonth() + 1, 1); }
+            else break;
+          }
+          if (missed.length) return { status: 'missing', next: missed[0], overdue: dayDiff(today, missed[0]), missedCount: missed.length };
+          if (ymKey(last) === ymKey(today)) return { status: 'ok', next: dateIn(today.getFullYear(), today.getMonth() + 1, item.day) };
+          const exp = dateIn(m.getFullYear(), m.getMonth(), item.day);
+          if (exp <= today) return { status: 'grace', next: exp, overdue: dayDiff(today, exp) };
+          if (dayDiff(exp, today) <= 7) return { status: 'soon', next: exp };
+          return { status: 'ok', next: exp };
+        }
+        // 毎年
+        const grace = Number(g.graceAnnual) || 0;
+        const next = dateIn(last.getFullYear() + 1, item.month - 1, item.day);
+        if (addDays(next, grace) < today) {
+          let years = 1;
+          while (addDays(dateIn(last.getFullYear() + years + 1, item.month - 1, item.day), grace) < today) years++;
+          return { status: 'missing', next, overdue: dayDiff(today, next), missedCount: years };
+        }
+        if (next <= today) return { status: 'grace', next, overdue: dayDiff(today, next) };
+        if (dayDiff(next, today) <= 30) return { status: 'soon', next };
+        return { status: 'ok', next };
+      }
+
+      // ---------- 描画：登録履歴のマス ----------
+      function monthsHtml(item, count) {
+        const t = today0();
+        const set = new Set(item.months);
+        let html = '<span class="months" aria-label="登録履歴">';
+        for (let i = count - 1; i >= 0; i--) {
+          const d = new Date(t.getFullYear(), t.getMonth() - i, 1);
+          const k = ymKey(d);
+          const cls = [set.has(k) ? 'on' : '', d.getMonth() === 0 && i !== count - 1 ? 'jan' : '', i === 0 ? 'cur' : ''].join(' ').trim();
+          html += `<i class="${cls}" title="${d.getFullYear()}年${d.getMonth() + 1}月${set.has(k) ? '：登録あり' : '：なし'}"></i>`;
+        }
+        return html + '</span>';
+      }
+      function timingText(item) {
+        if (item.freq === '毎年') return `毎年 ${item.month}月${item.day}日頃`;
+        if (item.freq === '毎月') return `毎月 ${item.day}日頃`;
+        return `${item.day}日頃`;
+      }
+
+      // ---------- 描画：支払方法の設定 ----------
+      let masterFilter = 'all';
+      function itemsArray() { return Object.values(store.items); }
+      function renderMaster() {
+        const section = document.getElementById('masterSection');
+        const items = itemsArray();
+        if (!items.length) { section.classList.add('hidden'); return; }
+        section.classList.remove('hidden');
+        document.getElementById('checkSection').classList.remove('hidden');
+
+        const hideOnce = document.getElementById('hideOnce').checked;
+        const q = document.getElementById('masterSearch').value.trim().toLowerCase();
+        const base = items.filter((it) => !(hideOnce && it.history.length <= 1 && it.freq === '対象外'));
+        document.getElementById('cntAll').textContent = base.length;
+        document.getElementById('cntM').textContent = base.filter((i) => i.freq === '毎月').length;
+        document.getElementById('cntY').textContent = base.filter((i) => i.freq === '毎年').length;
+        document.getElementById('cntX').textContent = base.filter((i) => i.freq === '対象外').length;
+
+        const order = { '毎月': 0, '毎年': 1, '対象外': 2 };
+        const rows = base
+          .filter((it) => masterFilter === 'all' || it.freq === masterFilter)
+          .filter((it) => !q || it.name.toLowerCase().includes(q) || (it.account || '').toLowerCase().includes(q))
+          .sort((a, b) => order[a.freq] - order[b.freq] || b.avg - a.avg);
+
+        const span = store.rangeMonths || 13;
+        const tbody = document.getElementById('masterBody');
+        if (!rows.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="8">条件に合う取引先はありません。</td></tr>'; return; }
+        tbody.innerHTML = rows.map((it) => `
+          <tr>
+            <td style="text-align:center;">
+              <div class="freq-group" data-id="${esc(it.id)}">
+                ${['毎月', '毎年', '対象外'].map((f) => `<button type="button" class="freq-btn ${it.freq === f ? 'active' : ''}" data-freq="${f}" aria-pressed="${it.freq === f}">${f}</button>`).join('')}
+              </div>
+              ${it.manual ? '<span class="manual-mark">手動で変更</span>' : ''}
+            </td>
+            <td><b style="color:var(--text-main);">${esc(it.name)}</b></td>
+            <td>${esc(it.account || '—')}</td>
+            <td class="num">${yen(it.avg)}</td>
+            <td class="nowrap">${monthsHtml(it, span)}</td>
+            <td class="nowrap">${esc(timingText(it))}</td>
+            <td class="nowrap">${it.lastDate ? fmtJp(parse(it.lastDate)) : '—'}</td>
+            <td class="nowrap" style="font-size:12px; color:var(--text-muted);">${esc(it.auto)}<span class="sub">${esc(it.autoNote || '')}</span></td>
+          </tr>`).join('');
+      }
+      document.getElementById('masterBody').addEventListener('click', (e) => {
+        const btn = e.target.closest('.freq-btn');
+        if (!btn) return;
+        const id = btn.closest('.freq-group').dataset.id;
+        const it = store.items[id];
+        if (!it) return;
+        it.freq = btn.dataset.freq;
+        it.manual = it.freq !== it.auto;
+        saveStore();
+        renderMaster();
+        if (lastResults) renderResults();
+      });
+      document.getElementById('masterFilter').addEventListener('click', (e) => {
+        const b = e.target.closest('button'); if (!b) return;
+        masterFilter = b.dataset.f;
+        document.querySelectorAll('#masterFilter button').forEach((x) => x.classList.toggle('active', x === b));
+        renderMaster();
+      });
+      document.getElementById('masterSearch').addEventListener('input', renderMaster);
+      document.getElementById('hideOnce').addEventListener('change', renderMaster);
+
+      function renderMeta() {
+        const a = document.getElementById('analyzeMeta');
+        const c = document.getElementById('checkMeta');
+        if (store.analyzedAt) {
+          const n = itemsArray();
+          a.innerHTML = `最終分析: ${esc(fmtJp(new Date(store.analyzedAt)))}（直近${store.rangeMonths}ヶ月）／ 取引先 ${n.length}件（毎月 ${n.filter((i) => i.freq === '毎月').length}件、毎年 ${n.filter((i) => i.freq === '毎年').length}件）`
+            + (store.noPartnerCount ? `<br>取引先が未設定のため集計できなかった取引: ${store.noPartnerCount}件` : '');
+          const ageDays = dayDiff(today0(), new Date(store.analyzedAt));
+          if (ageDays > 180) a.innerHTML += '<br><b style="color:#b45309;">前回の分析から半年以上たっています。再分析をおすすめします。</b>';
+        } else {
+          a.textContent = 'まだ分析していません。';
+        }
+        c.textContent = store.lastCheckAt ? `前回チェック: ${fmtJp(new Date(store.lastCheckAt))}` : '';
+      }
+
+      // ---------- 1. 分析 ----------
+      document.getElementById('runAnalyzeBtn').addEventListener('click', async () => {
+        const btn = document.getElementById('runAnalyzeBtn');
+        const loading = document.getElementById('analyzeLoading');
+        const text = document.getElementById('analyzeLoadingText');
+        const bar = document.getElementById('analyzeProgress');
+        showError('');
+        btn.disabled = true; loading.classList.remove('hidden'); bar.style.width = '0%';
+        try {
+          const months = Number(document.getElementById('rangeSelect').value);
+          const today = today0();
+          const start = new Date(today.getFullYear(), today.getMonth() - (months - 1), 1);
+
+          text.textContent = '取引先・勘定科目を取得中...';
+          const [partnerMap, accountMap] = await Promise.all([fetchPartnerMap(), fetchAccountMap()]);
+
+          text.textContent = `支出取引を取得中... 0/${months}ヶ月`;
+          const deals = await fetchExpenseDeals(start, today, (d, t) => {
+            text.textContent = `支出取引を取得中... ${d}/${t}ヶ月`;
+            bar.style.width = `${Math.round((d / t) * 100)}%`;
+          });
+
+          text.textContent = `${deals.length.toLocaleString()}件の取引を集計中...`;
+          const old = store.items || {};
+          const items = {};
+          let noPartner = 0;
+          deals.forEach((d) => {
+            if (!d.partner_id) { noPartner++; return; }
+            const id = String(d.partner_id);
+            if (!items[id]) items[id] = newItem(id, partnerMap[d.partner_id]);
+            addDealToItem(items[id], d, accountMap);
+          });
+          Object.values(items).forEach((it) => {
+            const prev = old[it.id];
+            if (prev && prev.manual) { it.manual = true; it.freq = prev.freq; }
+            recompute(it, today);
+            if (it.manual && it.freq === it.auto) it.manual = false;
+          });
+          // 期間内に取引がなくても、手動で毎年に設定していた取引先は残す（数年ぶりの請求に備える）
+          Object.values(old).forEach((prev) => { if (!items[prev.id] && prev.manual && prev.freq !== '対象外') items[prev.id] = prev; });
+
+          store.items = items;
+          store.rangeMonths = months;
+          store.analyzedAt = new Date().toISOString();
+          store.lastSync = fmt(today);
+          store.noPartnerCount = noPartner;
+          saveStore();
+          lastResults = null;
+          document.getElementById('checkResult').classList.add('hidden');
+          renderMeta(); renderMaster();
+        } catch (err) {
+          showError('分析に失敗しました: ' + err.message);
+        } finally {
+          loading.classList.add('hidden'); btn.disabled = false;
+        }
+      });
+
+      // ---------- 3. チェック ----------
+      const graceM = document.getElementById('graceMonthly');
+      const graceY = document.getElementById('graceAnnual');
+      function syncGraceInputs() { graceM.value = store.settings.graceMonthly; graceY.value = store.settings.graceAnnual; }
+      [graceM, graceY].forEach((el) => el.addEventListener('change', () => {
+        store.settings.graceMonthly = Math.max(0, Number(graceM.value) || 0);
+        store.settings.graceAnnual = Math.max(0, Number(graceY.value) || 0);
+        saveStore();
+        if (lastResults) { lastResults = buildResults(); renderResults(); }
+      }));
+
+      let lastResults = null;
+      let resultFilter = 'missing';
+      function buildResults() {
+        const today = today0();
+        return itemsArray().map((it) => ({ it, ev: evaluate(it, today) })).filter((r) => r.ev);
+      }
+
+      document.getElementById('runCheckBtn').addEventListener('click', async () => {
+        const btn = document.getElementById('runCheckBtn');
+        const loading = document.getElementById('checkLoading');
+        const text = document.getElementById('checkLoadingText');
+        showError('');
+        if (!itemsArray().length) { showError('先に「過去の支払を分析する」を実行してください。'); return; }
+        btn.disabled = true; loading.classList.remove('hidden');
+        try {
+          const today = today0();
+          // (a) 前回同期の7日前から今日までの差分だけ取得
+          const from = addDays(parse(store.lastSync || fmt(addDays(today, -40))), -7);
+          text.textContent = '前回以降の取引を取得中...';
+          const [accountMap, deals] = await Promise.all([fetchAccountMap(), fetchExpenseDeals(from, today)]);
+          deals.forEach((d) => {
+            if (!d.partner_id) return;
+            const it = store.items[String(d.partner_id)];
+            if (it) addDealToItem(it, d, accountMap);
+          });
+          itemsArray().forEach((it) => recompute(it, today));
+
+          // (b) 漏れ疑いだけ取引先指定で再確認（発生日をさかのぼって登録された取引を拾う）
+          const candidates = itemsArray().filter((it) => { const ev = evaluate(it, today); return ev && ev.status === 'missing'; });
+          if (candidates.length) {
+            text.textContent = `漏れの疑いがある ${candidates.length}件を個別に確認中...`;
+            await runPool(candidates.map((it) => async () => {
+              const since = fmt(addDays(parse(it.lastDate), 1));
+              const hits = await fetchAllPages(`/deals?company_id=${companyId}&type=expense&partner_id=${it.id}&start_issue_date=${since}&end_issue_date=${fmt(today)}`, 'deals');
+              hits.forEach((d) => addDealToItem(it, d, accountMap));
+              recompute(it, today);
+            }), 3, (d, t) => { text.textContent = `漏れの疑いがある取引先を個別に確認中... ${d}/${t}`; });
+          }
+
+          store.lastSync = fmt(today);
+          store.lastCheckAt = new Date().toISOString();
+          saveStore();
+          lastResults = buildResults();
+          renderMeta(); renderMaster(); renderResults();
+          document.getElementById('checkResult').classList.remove('hidden');
+        } catch (err) {
+          showError('チェックに失敗しました: ' + err.message);
+        } finally {
+          loading.classList.add('hidden'); btn.disabled = false;
+        }
+      });
+
+      const STATUS_LABEL = { missing: '漏れの疑い', grace: '猶予期間中', soon: 'まもなく', ok: '登録済み' };
+      const STATUS_ORDER = { missing: 0, grace: 1, soon: 2, ok: 3 };
+      function statusText(ev) {
+        if (ev.status === 'missing') return ev.missedCount > 1 ? `${ev.overdue}日超過（${ev.missedCount}回分なし）` : `${ev.overdue}日超過`;
+        if (ev.status === 'grace') return `予定日から${ev.overdue}日経過`;
+        if (ev.status === 'soon') return `あと${dayDiff(ev.next, today0())}日`;
+        return '—';
+      }
+      function filteredResults(f) {
+        const list = (lastResults || []).slice().sort((a, b) =>
+          STATUS_ORDER[a.ev.status] - STATUS_ORDER[b.ev.status] || (b.ev.overdue || 0) - (a.ev.overdue || 0) || a.ev.next - b.ev.next);
+        if (f === 'missing') return list.filter((r) => r.ev.status === 'missing');
+        if (f === 'attention') return list.filter((r) => r.ev.status !== 'ok');
+        return list;
+      }
+      function renderResults() {
+        if (!lastResults) return;
+        lastResults = buildResults();
+        const c = (s) => lastResults.filter((r) => r.ev.status === s).length;
+        document.getElementById('statMissing').textContent = c('missing') + ' 件';
+        document.getElementById('statGrace').textContent = c('grace') + ' 件';
+        document.getElementById('statSoon').textContent = c('soon') + ' 件';
+        document.getElementById('statOk').textContent = c('ok') + ' 件';
+        const rows = filteredResults(resultFilter);
+        const tbody = document.getElementById('resultBody');
+        if (!rows.length) {
+          tbody.innerHTML = `<tr class="empty-row"><td colspan="8">${resultFilter === 'missing' ? '登録漏れの疑いはありません。' : '該当する取引先はありません。'}</td></tr>`;
+          return;
+        }
+        tbody.innerHTML = rows.map(({ it, ev }) => `
+          <tr>
+            <td><span class="badge ${ev.status}">${STATUS_LABEL[ev.status]}</span></td>
+            <td><span class="freq-chip ${it.freq === '毎月' ? 'm' : 'y'}">${it.freq}</span> <b style="color:var(--text-main);">${esc(it.name)}</b></td>
+            <td>${esc(it.account || '—')}</td>
+            <td class="num">${yen(it.avg)}</td>
+            <td class="nowrap">${fmtJp(ev.next)}</td>
+            <td class="nowrap">${fmtJp(parse(it.lastDate))}</td>
+            <td class="nowrap ${ev.status === 'missing' ? 'overdue' : ''}">${esc(statusText(ev))}</td>
+            <td class="nowrap">${monthsHtml(it, 13)}</td>
+          </tr>`).join('');
+      }
+      document.getElementById('resultFilter').addEventListener('click', (e) => {
+        const b = e.target.closest('button'); if (!b) return;
+        resultFilter = b.dataset.f;
+        document.querySelectorAll('#resultFilter button').forEach((x) => x.classList.toggle('active', x === b));
+        renderResults();
+      });
+
+      // ---------- CSV ----------
+      const csvCell = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+      function download(csv, name) {
+        const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = name;
+        document.body.appendChild(a); a.click();
+        document.body.removeChild(a); URL.revokeObjectURL(url);
+      }
+      const safeName = (companyName || companyId).replace(/[\\/:*?"<>|\s]/g, '_');
+      const stamp = () => fmt(today0()).replace(/-/g, '');
+
+      function exportResults(f) {
+        const rows = filteredResults(f);
+        if (!rows.length) { alert('出力するデータがありません。'); exportDropdownMenu.classList.remove('show'); return; }
+        let csv = '事業所,判定,支払方法,取引先ID,取引先名,主な勘定科目,平均金額,予定日,最終登録日,状況\n';
+        rows.forEach(({ it, ev }) => {
+          csv += [companyName, STATUS_LABEL[ev.status], it.freq, it.id, it.name, it.account, Math.round(it.avg), fmt(ev.next), it.lastDate, statusText(ev)].map(csvCell).join(',') + '\n';
+        });
+        const label = { missing: '漏れの疑い', attention: '要注意', all: '全件' }[f];
+        download(csv, `支払登録漏れ_${label}_${safeName}_${stamp()}.csv`);
+        exportDropdownMenu.classList.remove('show');
+      }
+      document.getElementById('exportMissingBtn').addEventListener('click', () => exportResults('missing'));
+      document.getElementById('exportAttentionBtn').addEventListener('click', () => exportResults('attention'));
+      document.getElementById('exportAllResultBtn').addEventListener('click', () => exportResults('all'));
+
+      document.getElementById('exportMasterBtn').addEventListener('click', () => {
+        const items = itemsArray();
+        if (!items.length) { alert('出力するデータがありません。'); return; }
+        let csv = '取引先ID,取引先名,支払方法,自動判定,手動変更,主な勘定科目,平均金額,通常の登録日,登録月（毎年）,最終登録日,登録月数\n';
+        items.sort((a, b) => a.name.localeCompare(b.name, 'ja')).forEach((it) => {
+          csv += [it.id, it.name, it.freq, it.auto, it.manual ? 'あり' : '', it.account, Math.round(it.avg), it.day, it.month, it.lastDate, it.months.length].map(csvCell).join(',') + '\n';
+        });
+        download(csv, `支払方法設定_${safeName}_${stamp()}.csv`);
+      });
+
+      // 設定CSVの読み込み（別のPCやブラウザに設定を移すとき）
+      function parseCsv(text) {
+        const rows = []; let row = [], cell = '', q = false;
+        for (let i = 0; i < text.length; i++) {
+          const ch = text[i];
+          if (q) {
+            if (ch === '"') { if (text[i + 1] === '"') { cell += '"'; i++; } else q = false; }
+            else cell += ch;
+          } else if (ch === '"') q = true;
+          else if (ch === ',') { row.push(cell); cell = ''; }
+          else if (ch === '\n') { row.push(cell); rows.push(row); row = []; cell = ''; }
+          else if (ch !== '\r') cell += ch;
+        }
+        if (cell || row.length) { row.push(cell); rows.push(row); }
+        return rows;
+      }
+      document.getElementById('importBtn').addEventListener('click', () => document.getElementById('importFile').click());
+      document.getElementById('importFile').addEventListener('change', async (e) => {
+        const file = e.target.files[0]; e.target.value = '';
+        if (!file) return;
+        const rows = parseCsv((await file.text()).replace(/^\uFEFF/, ''));
+        const head = rows.shift() || [];
+        const iId = head.indexOf('取引先ID'), iF = head.indexOf('支払方法');
+        if (iId < 0 || iF < 0) { alert('「取引先ID」と「支払方法」の列が見つかりません。このアプリで出力した設定CSVを選んでください。'); return; }
+        let applied = 0, skipped = 0;
+        rows.forEach((r) => {
+          const it = store.items[r[iId]]; const f = r[iF];
+          if (it && ['毎月', '毎年', '対象外'].includes(f)) { it.freq = f; it.manual = f !== it.auto; applied++; } else if (r[iId]) skipped++;
+        });
+        saveStore(); renderMaster(); if (lastResults) renderResults();
+        alert(`${applied}件の支払方法を反映しました。` + (skipped ? `\n（この事業所に見つからない取引先 ${skipped}件はスキップしました）` : ''));
+      });
+
+      document.getElementById('resetBtn').addEventListener('click', () => {
+        if (!confirm('この事業所の分析結果と支払方法の設定を削除します。よろしいですか？')) return;
+        try { localStorage.removeItem(STORE_KEY); } catch (e) {}
+        store = defaultStore(); lastResults = null;
+        document.getElementById('checkResult').classList.add('hidden');
+        document.getElementById('checkSection').classList.add('hidden');
+        syncGraceInputs(); renderMeta(); renderMaster();
+        dropdownMenu.classList.remove('show');
+      });
+
+      // ---------- 初期表示 ----------
+      document.getElementById('rangeSelect').value = String(store.rangeMonths || 13);
+      syncGraceInputs();
+      renderMeta();
+      renderMaster();
+    })();
+  </script>
+</body>
+</html>
