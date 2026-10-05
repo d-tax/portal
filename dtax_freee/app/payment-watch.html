@@ -35,65 +35,25 @@
     .progress-fill { height: 100%; width: 0; background: var(--primary); transition: width 0.2s; }
 
     .control-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 14px; }
-    .control-row label { font-size: 13px; color: var(--text-muted); display: inline-flex; align-items: center; gap: 6px; }
-    .control-row select, .control-row input[type="number"], .control-row input[type="search"] {
-      font-size: 13px; padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text-main);
-    }
+    .control-row label, .control-row .lbl { font-size: 13px; color: var(--text-muted); display: inline-flex; align-items: center; gap: 6px; }
+    .control-row input[type="number"], .control-row input[type="search"] { font-size: 13px; padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text-main); }
     .control-row input[type="number"] { width: 64px; }
     .control-row input[type="search"] { min-width: 200px; }
     .meta-line { font-size: 12px; color: var(--text-muted); margin-top: 10px; line-height: 1.7; }
 
-    .summary { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin: 16px 0; box-shadow: var(--shadow-sm); }
+    .summary { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; margin-bottom: 16px; box-shadow: var(--shadow-sm); }
     .summary-stats { display: flex; flex-wrap: wrap; gap: 28px; }
     .stat .num { font-size: 24px; font-weight: 700; display: block; font-variant-numeric: tabular-nums; }
     .stat .num.danger { color: var(--danger-text, #b91c1c); }
-    .stat .num.warn { color: #b45309; }
-    .stat .num.okc { color: #047857; }
     .stat .lbl { font-size: 12px; color: var(--text-muted); }
 
-    /* セグメント（フィルタ・支払方法） */
     .seg { display: inline-flex; background: var(--bg); padding: 3px; border-radius: 8px; border: 1px solid var(--border); gap: 2px; }
     .seg button { background: transparent; border: 1px solid transparent; padding: 5px 12px; font-size: 12px; font-weight: 600; border-radius: 6px; cursor: pointer; color: var(--text-muted); white-space: nowrap; }
     .seg button:hover { color: var(--text-main); }
     .seg button.active { background: var(--surface); color: var(--text-main); border-color: var(--border); box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
     .seg .cnt { font-weight: 500; margin-left: 4px; opacity: 0.75; }
 
-    .freq-group { display: inline-flex; flex-direction: column; gap: 3px; background: var(--bg); padding: 4px; border-radius: 8px; border: 1px solid var(--border); width: 86px; }
-    .freq-btn { background: transparent; border: 1px solid transparent; padding: 4px 6px; font-size: 12px; font-weight: 600; border-radius: 6px; cursor: pointer; color: var(--text-muted); width: 100%; }
-    .freq-btn:hover { color: var(--text-main); }
-    .freq-btn.active[data-freq="毎月"] { background: #eff6ff; color: #1e40af; border-color: #3b82f6; }
-    .freq-btn.active[data-freq="毎年"] { background: #f5f3ff; color: #5b21b6; border-color: #8b5cf6; }
-    .freq-btn.active[data-freq="対象外"] { background: var(--surface); color: var(--text-main); border-color: var(--border-hover, #cbd5e1); }
-
-    .all-table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow-sm); }
-    .all-table th, .all-table td { padding: 11px 14px; text-align: left; font-size: 13px; border-bottom: 1px solid var(--border); vertical-align: middle; }
-    .all-table th { background: var(--bg); font-weight: 600; color: var(--text-muted); white-space: nowrap; }
-    .all-table td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
-    .all-table td.nowrap { white-space: nowrap; }
-    .table-wrap { overflow-x: auto; max-height: 640px; overflow-y: auto; border-radius: var(--radius); }
-    .table-wrap thead th { position: sticky; top: 0; z-index: 1; }
-    .empty-row td { text-align: center; color: var(--text-muted); padding: 30px; }
-    .sub { display: block; font-size: 11px; color: var(--text-muted); margin-top: 2px; font-weight: 400; }
-    .manual-mark { font-size: 10px; color: var(--text-muted); display: block; text-align: center; margin-top: 3px; }
-
-    /* 登録履歴（月ごとのマス） */
-    .months { display: inline-flex; gap: 2px; align-items: center; }
-    .months i { display: block; width: 8px; height: 14px; border-radius: 2px; background: var(--bg); border: 1px solid var(--border); }
-    .months i.on { background: var(--primary); border-color: var(--primary); }
-    .months i.jan { margin-left: 5px; }
-    .months i.cur { outline: 1px dashed var(--text-muted); outline-offset: 1px; }
-    .months-legend { font-size: 11px; color: var(--text-muted); display: flex; justify-content: space-between; margin-top: 3px; }
-
-    .badge { display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap; border: 1px solid transparent; }
-    .badge.missing { background: #fef2f2; color: #991b1b; border-color: #fca5a5; }
-    .badge.grace { background: #fffbeb; color: #92400e; border-color: #fcd34d; }
-    .badge.soon { background: #f8fafc; color: #475569; border-color: #cbd5e1; }
-    .badge.ok { background: #ecfdf5; color: #065f46; border-color: #6ee7b7; }
-    .freq-chip { font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 4px; }
-    .freq-chip.m { background: #eff6ff; color: #1e40af; }
-    .freq-chip.y { background: #f5f3ff; color: #5b21b6; }
-    .overdue { color: #991b1b; font-weight: 700; }
-
+    /* 除外する勘定科目 */
     .exclude-panel { border: 1px solid var(--border); border-radius: 8px; background: var(--surface); margin-bottom: 14px; }
     .exclude-panel summary { cursor: pointer; padding: 12px 14px; font-size: 13px; font-weight: 600; color: var(--text-main); list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
     .exclude-panel summary::-webkit-details-marker { display: none; }
@@ -110,10 +70,67 @@
     .acc-chip .n { color: var(--text-muted); font-variant-numeric: tabular-nums; }
     .acc-chip .rec { font-size: 10px; font-weight: 700; color: #92400e; }
     .link-btn { background: none; border: none; color: var(--primary); font-size: 12px; cursor: pointer; padding: 0; text-decoration: underline; margin-top: 10px; }
+
+    /* 一覧 */
+    .all-table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow-sm); }
+    .all-table th, .all-table td { padding: 12px 14px; text-align: left; font-size: 13px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .all-table th { background: var(--bg); font-weight: 600; color: var(--text-muted); white-space: nowrap; }
+    .all-table td.nowrap { white-space: nowrap; }
+    .all-table tr.alert-row td:first-child { box-shadow: inset 3px 0 0 #dc2626; }
+    .table-wrap { overflow-x: auto; max-height: 720px; overflow-y: auto; border-radius: var(--radius); }
+    .table-wrap thead th { position: sticky; top: 0; z-index: 1; }
+    .empty-row td { text-align: center; color: var(--text-muted); padding: 30px; }
+    .sub { display: block; font-size: 11px; color: var(--text-muted); margin-top: 3px; font-weight: 400; }
+    .freq-chip { font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 4px; margin-right: 6px; }
+    .freq-chip.m { background: #eff6ff; color: #1e40af; }
+    .freq-chip.y { background: #f5f3ff; color: #5b21b6; }
+
+    /* 登録履歴：毎月（棒グラフのタイムライン） */
+    .tl { display: inline-flex; gap: 3px; align-items: flex-end; }
+    .tl-cell { width: 22px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .tl-track { width: 16px; height: 34px; border-radius: 3px; background: var(--bg); border: 1px solid var(--border); display: flex; align-items: flex-end; overflow: hidden; position: relative; box-sizing: border-box; }
+    .tl-bar { width: 100%; background: var(--primary); }
+    .tl-cell.pre .tl-track { background: transparent; border-style: dotted; opacity: 0.55; }
+    .tl-cell.miss .tl-track { background: #fef2f2; border-color: #fca5a5; }
+    .tl-cell.miss .tl-track::after, .yg .c.miss::after { content: '×'; position: absolute; inset: 0; display: grid; place-items: center; color: #dc2626; font-size: 11px; font-weight: 700; }
+    .tl-cell.late .tl-track { border: 1.5px dashed #dc2626; background: #fff7f7; }
+    .tl-cell.wait .tl-track { border: 1.5px dashed var(--text-muted); background: transparent; }
+    .tl-lbl { font-size: 10px; color: var(--text-muted); line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .tl-lbl.yr { color: var(--text-main); font-weight: 700; }
+
+    /* 登録履歴：毎年（年×月のグリッド） */
+    .yg { display: inline-grid; grid-template-columns: 38px repeat(12, 16px); gap: 3px; align-items: center; }
+    .yg .h { font-size: 9.5px; color: var(--text-muted); text-align: center; line-height: 1; }
+    .yg .y { font-size: 11px; color: var(--text-muted); font-weight: 600; font-variant-numeric: tabular-nums; }
+    .yg .c { width: 16px; height: 16px; border-radius: 3px; background: var(--bg); border: 1px solid var(--border); position: relative; box-sizing: border-box; }
+    .yg .c.on { background: var(--primary); border-color: var(--primary); }
+    .yg .c.miss { background: #fef2f2; border-color: #fca5a5; }
+    .yg .c.wait { border: 1.5px dashed var(--text-muted); background: transparent; }
+    .yg .c.out { background: transparent; border-color: transparent; }
+    .yg .c.future { opacity: 0.35; }
+
+    .hist-foot { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px; font-size: 11.5px; color: var(--text-muted); }
+    .meter { width: 56px; height: 5px; border-radius: 3px; background: var(--bg); border: 1px solid var(--border); overflow: hidden; }
+    .meter i { display: block; height: 100%; background: var(--primary); }
+    .meter.low i { background: #d97706; }
+    .flag { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; border: 1px solid transparent; white-space: nowrap; }
+    .flag.miss { background: #fef2f2; color: #991b1b; border-color: #fca5a5; }
+    .flag.wait { background: #f8fafc; color: #475569; border-color: #cbd5e1; }
+    .flag.ok { background: #ecfdf5; color: #065f46; border-color: #6ee7b7; }
+    .flag.ex { background: var(--bg); color: var(--text-muted); border-color: var(--border); }
+
+    .legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12px; color: var(--text-muted); margin-bottom: 10px; align-items: center; }
+    .legend span { display: inline-flex; align-items: center; gap: 6px; }
+    .sw { width: 12px; height: 12px; border-radius: 3px; border: 1px solid var(--border); background: var(--bg); position: relative; box-sizing: border-box; display: inline-block; }
+    .sw.on { background: var(--primary); border-color: var(--primary); }
+    .sw.miss { background: #fef2f2; border-color: #fca5a5; }
+    .sw.late { border: 1.5px dashed #dc2626; background: #fff7f7; }
+    .sw.wait { border: 1.5px dashed var(--text-muted); background: transparent; }
+    .sw.pre { border-style: dotted; background: transparent; }
+
     .section-gap { margin-top: 20px; }
     .actions-right { margin-top: 16px; display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
     .hidden { display: none !important; }
-    input[type="file"].hidden-input { display: none; }
     :focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
   </style>
 </head>
@@ -135,26 +152,26 @@
           <span></span><span></span><span></span>
         </button>
         <div class="dropdown-menu" id="dropdownMenu">
-          <button class="dropdown-item" id="resetBtn" type="button">この事業所の設定を初期化</button>
+          <button class="dropdown-item" id="resetBtn" type="button">この事業所の分析結果を削除</button>
           <button class="dropdown-item" id="logoutBtn" type="button"><img src="../images/logout.png" alt=""> ログアウト</button>
         </div>
       </div>
     </header>
 
     <div class="app-header-bar">
-      <a href="../dtax_freee.html" class="btn-nav">← ポータルへ戻る</a>
+      <a href="../index.html" class="btn-nav">← ポータルへ戻る</a>
       <span class="app-tag">使用中：支払登録漏れチェッカー</span>
     </div>
 
-    <!-- 1. 分析 -->
+    <!-- 支払頻度を分析する -->
     <div class="step-box">
-      <div class="step-title" style="margin-bottom: 6px;">1. 支払頻度を分析する</div>
-      <div class="step-desc">分析する支払頻度を選んで実行します。「毎月」は直近13ヶ月、「毎年」は直近25ヶ月の支出取引を使います。連続して支払が発生したことのない取引先は一覧に入りません。初回と、半年に1回程度の見直し時に実行してください。手動で変更した支払方法は再分析しても保持されます。</div>
+      <div class="step-title" style="margin-bottom: 6px;">支払頻度を分析する</div>
+      <div class="step-desc">分析する支払頻度を選んで実行します。「毎月」は直近13ヶ月、「毎年」は直近37ヶ月の支出取引を使います。連続して支払が発生したことのない取引先は一覧に入りません。</div>
       <div class="control-row">
-        <span style="font-size:13px; color:var(--text-muted);">支払頻度の分析</span>
+        <span class="lbl">支払頻度の分析</span>
         <div class="seg" id="kindSelect" role="group" aria-label="支払頻度の分析">
-          <button type="button" data-k="毎月" class="active">毎月</button>
-          <button type="button" data-k="毎年">毎年</button>
+          <button type="button" data-k="毎月" class="active" aria-pressed="true">毎月</button>
+          <button type="button" data-k="毎年" aria-pressed="false">毎年</button>
         </div>
         <label>継続率の基準 <input type="number" id="ratioTh" min="0" max="100" step="5"> %以上</label>
       </div>
@@ -164,11 +181,10 @@
       <div class="info-box">
         <b>【一覧に入る条件】</b>
         <ul>
-          <li><b>毎月:</b> 2ヶ月以上続けて支払があり、継続率が基準以上の取引先。最後の支払から6ヶ月以上空いている取引先は解約済みとみなして除外します</li>
-          <li><b>毎年:</b> 約1年（330〜400日）の間隔で2年続けて支払があり、継続率が基準以上の取引先。直近12ヶ月に3ヶ月以上支払がある取引先は除外します</li>
-          <li><b>継続率:</b> 最初の支払から最後の支払までの期間のうち、支払があった月（毎年の場合は年）の割合。途中から契約した取引先も不利になりません。また、直近の登録漏れで継続率が下がって一覧から消えることもありません</li>
+          <li><b>毎月:</b> 2ヶ月以上続けて支払があり、最初の支払月から今日までのうち支払があった月の割合（継続率）が基準以上の取引先。今月分は未登録でも数えません</li>
+          <li><b>毎年:</b> 約1年（330〜400日）の間隔で2年続けて支払があり、最初の支払から今日までの毎年の支払時期（前後45日）に支払があった割合が基準以上の取引先。直近12ヶ月に3ヶ月以上支払がある取引先は除外します</li>
         </ul>
-        継続率の基準を変えると一覧にすぐ反映されます（再分析は不要です）。主な勘定科目が「除外する勘定科目」に含まれる取引先は「対象外」になります。取引先が未設定の取引は集計できません。
+        途中から契約した取引先は最初の支払から数えるので不利になりません。途中で解約した取引先は継続率が下がり、一覧から外れます。継続率の基準は「毎月」「毎年」で別々に設定でき、変更は一覧にすぐ反映されます。
       </div>
 
       <div id="analyzeLoading" class="loading-box hidden">
@@ -178,118 +194,69 @@
       </div>
     </div>
 
-    <!-- 2. 支払方法の設定 -->
-    <div class="step-box section-gap hidden" id="masterSection">
-      <div class="step-title" style="margin-bottom: 6px;">2. 支払方法を確認する</div>
-      <div class="step-desc">自動判定の結果を確認し、必要に応じて支払方法を変更してください。変更はすぐに保存されます。</div>
+    <!-- 分析結果を確認する -->
+    <div class="step-box section-gap hidden" id="resultSection">
+      <div class="step-title" style="margin-bottom: 6px;">分析結果を確認する</div>
+      <div class="step-desc">登録履歴の赤い×や赤い点線が、支払が登録されていない月です。漏れの疑いがある取引先は一覧の上に表示されます。</div>
+
+      <div class="summary">
+        <div class="summary-stats">
+          <div class="stat"><span class="num danger" id="statAlert">0</span><span class="lbl">漏れの疑い</span></div>
+          <div class="stat"><span class="num" id="statM">0</span><span class="lbl">毎月の支払</span></div>
+          <div class="stat"><span class="num" id="statY">0</span><span class="lbl">毎年の支払</span></div>
+        </div>
+      </div>
 
       <div class="control-row">
-        <div class="seg" id="masterFilter">
+        <div class="seg" id="viewFilter">
           <button type="button" data-f="all" class="active">すべて<span class="cnt" id="cntAll"></span></button>
+          <button type="button" data-f="alert">漏れの疑い<span class="cnt" id="cntAlert"></span></button>
           <button type="button" data-f="毎月">毎月<span class="cnt" id="cntM"></span></button>
           <button type="button" data-f="毎年">毎年<span class="cnt" id="cntY"></span></button>
-          <button type="button" data-f="対象外">対象外<span class="cnt" id="cntX"></span></button>
         </div>
-        <input type="search" id="masterSearch" placeholder="取引先名・勘定科目で絞り込み" aria-label="取引先名・勘定科目で絞り込み">
-        <label><input type="checkbox" id="showBelow"> 継続率が基準未満の取引先も表示</label>
+        <input type="search" id="search" placeholder="取引先名・勘定科目で絞り込み" aria-label="取引先名・勘定科目で絞り込み">
+        <label><input type="checkbox" id="showHidden"> 基準未満・除外科目の取引先も表示</label>
         <span class="meta-line" id="hiddenNote" style="margin-top:0;"></span>
       </div>
 
-      <details class="exclude-panel" id="excludePanel">
+      <details class="exclude-panel">
         <summary><span>除外する勘定科目<span class="sum-note" id="excludeSummary"></span></span></summary>
         <div class="exclude-body">
-          <div class="exclude-help">チェックした勘定科目が主な科目になっている取引先は、自動で「対象外」になります（カフェ・コンビニ・タクシーなどの除去用）。個別に「毎月」「毎年」へ変更した取引先はそのまま残ります。この設定はすべての事業所で共通です。</div>
+          <div class="exclude-help">チェックした勘定科目が主な科目になっている取引先は、一覧から外れます（カフェ・コンビニ・タクシーなどの除去用）。この設定はすべての事業所で共通です。</div>
           <div id="excludeLists"></div>
           <button type="button" class="link-btn" id="resetExcludeBtn">おすすめの設定に戻す</button>
         </div>
       </details>
 
+      <div class="legend">
+        <span><i class="sw on"></i>支払あり（高さは金額）</span>
+        <span><i class="sw miss"></i>支払なし</span>
+        <span><i class="sw late"></i>今月分が未登録（予定日を過ぎた）</span>
+        <span><i class="sw wait"></i>予定日前</span>
+        <span><i class="sw pre"></i>最初の支払より前</span>
+      </div>
+
       <div class="table-wrap">
         <table class="all-table">
           <thead>
             <tr>
-              <th style="width: 100px; text-align: center;">支払方法</th>
               <th>取引先</th>
               <th>主な勘定科目</th>
-              <th style="text-align: right;">平均金額</th>
               <th>登録履歴</th>
               <th>通常の登録時期</th>
               <th>最終登録日</th>
-              <th>分析結果</th>
             </tr>
           </thead>
-          <tbody id="masterBody"></tbody>
+          <tbody id="resultBody"></tbody>
         </table>
       </div>
 
       <div class="actions-right">
-        <button class="btn-secondary btn-small" id="importBtn" type="button">設定CSVを読み込む</button>
-        <input type="file" id="importFile" accept=".csv,text/csv" class="hidden-input">
-        <button class="btn-secondary btn-small" id="exportMasterBtn" type="button"><img src="../images/dounload.png" alt="">支払方法の設定をCSV出力</button>
-      </div>
-    </div>
-
-    <!-- 3. チェック -->
-    <div class="step-box section-gap hidden" id="checkSection">
-      <div class="step-title" style="margin-bottom: 6px;">3. 登録漏れをチェックする</div>
-      <div class="step-desc">前回チェック以降の取引だけを取得して照合します。漏れが疑われる取引先は、取引先を指定してもう一度確認してから表示するため、発生日をさかのぼって登録された取引も見逃しません。</div>
-
-      <div class="control-row">
-        <label>猶予日数（毎月） <input type="number" id="graceMonthly" min="0" max="60"> 日</label>
-        <label>猶予日数（毎年） <input type="number" id="graceAnnual" min="0" max="180"> 日</label>
-      </div>
-      <button class="btn-secondary" id="runCheckBtn" type="button">登録漏れをチェックする</button>
-      <div class="meta-line" id="checkMeta"></div>
-
-      <div id="checkLoading" class="loading-box hidden">
-        <div class="spinner"></div>
-        <div style="font-size: 13px; font-weight: 600; color: var(--text-main);" id="checkLoadingText">照合中...</div>
-      </div>
-
-      <div id="checkResult" class="hidden">
-        <div class="summary">
-          <div class="summary-stats">
-            <div class="stat"><span class="num danger" id="statMissing">0</span><span class="lbl">漏れの疑い</span></div>
-            <div class="stat"><span class="num warn" id="statGrace">0</span><span class="lbl">予定日を過ぎた（猶予内）</span></div>
-            <div class="stat"><span class="num" id="statSoon">0</span><span class="lbl">まもなく予定日</span></div>
-            <div class="stat"><span class="num okc" id="statOk">0</span><span class="lbl">登録済み</span></div>
-          </div>
-        </div>
-
-        <div class="control-row">
-          <div class="seg" id="resultFilter">
-            <button type="button" data-f="missing" class="active">漏れの疑い</button>
-            <button type="button" data-f="attention">要注意すべて</button>
-            <button type="button" data-f="all">すべて</button>
-          </div>
-        </div>
-
-        <div class="table-wrap">
-          <table class="all-table">
-            <thead>
-              <tr>
-                <th>判定</th>
-                <th>取引先</th>
-                <th>主な勘定科目</th>
-                <th style="text-align: right;">平均金額</th>
-                <th>予定日</th>
-                <th>最終登録日</th>
-                <th>状況</th>
-                <th>登録履歴</th>
-              </tr>
-            </thead>
-            <tbody id="resultBody"></tbody>
-          </table>
-        </div>
-
-        <div class="actions-right">
-          <div class="menu-container" style="display: inline-block;">
-            <button class="btn-secondary btn-small" id="exportMenuBtn" type="button"><img src="../images/dounload.png" alt="">チェック結果をCSV出力</button>
-            <div class="dropdown-menu" id="exportDropdownMenu" style="min-width: 200px;">
-              <button class="dropdown-item" id="exportMissingBtn" type="button">漏れの疑いのみを出力</button>
-              <button class="dropdown-item" id="exportAttentionBtn" type="button">要注意すべてを出力</button>
-              <button class="dropdown-item" id="exportAllResultBtn" type="button">すべての項目を出力</button>
-            </div>
+        <div class="menu-container" style="display: inline-block;">
+          <button class="btn-secondary btn-small" id="exportMenuBtn" type="button"><img src="../images/dounload.png" alt="">CSVデータを出力する</button>
+          <div class="dropdown-menu" id="exportDropdownMenu" style="min-width: 200px;">
+            <button class="dropdown-item" id="exportViewBtn" type="button">表示中の一覧を出力</button>
+            <button class="dropdown-item" id="exportAlertBtn" type="button">漏れの疑いのみを出力</button>
           </div>
         </div>
       </div>
@@ -333,7 +300,7 @@
       dropdownMenu.addEventListener('click', (e) => e.stopPropagation());
       exportDropdownMenu.addEventListener('click', (e) => e.stopPropagation());
       document.getElementById('logoutBtn').addEventListener('click', () => {
-        if (confirm('ログアウトしますか？')) { sessionStorage.clear(); window.location.href = '../dtax_freee.html'; }
+        if (confirm('ログアウトしますか？')) { sessionStorage.clear(); window.location.href = '../index.html'; }
       });
 
       // ---------- 認証情報 ----------
@@ -342,50 +309,55 @@
       const companyName = sessionStorage.getItem('company_name') || '';
       if (!token || !companyId) {
         alert('ログイン情報または事業所選択が失われました。ポータルに戻ります。');
-        window.location.href = '../dtax_freee.html';
+        window.location.href = '../index.html';
         return;
       }
       document.getElementById('currentCompanyLabel').textContent = companyName;
 
-      // ---------- 日付ユーティリティ ----------
+      // ---------- ユーティリティ ----------
       const pad = (n) => String(n).padStart(2, '0');
       const fmt = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
       const fmtJp = (d) => `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())}`;
-      const parse = (s) => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+      const parse = (s) => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d || 1); };
       const ymKey = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
       const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+      const addMonths = (d, n) => new Date(d.getFullYear(), d.getMonth() + n, 1);
       const daysInMonth = (y, m0) => new Date(y, m0 + 1, 0).getDate();
+      const dateIn = (y, m0, day) => new Date(y, m0, Math.min(day, daysInMonth(y, m0)));
       const dayDiff = (a, b) => Math.round((a - b) / 86400000);
       const today0 = () => { const t = new Date(); return new Date(t.getFullYear(), t.getMonth(), t.getDate()); };
-      const dateIn = (y, m0, day) => new Date(y, m0, Math.min(day, daysInMonth(y, m0)));
       const yen = (n) => '¥' + Math.round(n || 0).toLocaleString('ja-JP');
       const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
       const median = (arr) => { if (!arr.length) return 1; const a = [...arr].sort((x, y) => x - y); return a[Math.floor((a.length - 1) / 2)]; };
+      const GRACE_MONTHLY = 7;   // 今月分の予定日を何日過ぎたら漏れの疑いにするか
+      const GRACE_ANNUAL = 30;   // 毎年の予定日を何日過ぎたら漏れの疑いにするか
+      const WINDOW = { '毎月': 13, '毎年': 37 };
+
+      function showError(msg) {
+        const box = document.getElementById('errorBox');
+        box.textContent = msg;
+        box.style.display = msg ? 'block' : 'none';
+      }
 
       // ---------- 保存（このブラウザ・事業所ごと） ----------
-      const STORE_KEY = `paymentWatch:v2:${companyId}`;
-      const HISTORY_CAP = 40;
-      const MONTHS_CAP = 36;
-      function defaultStore() {
-        return { analyzed: {}, lastSync: null, lastCheckAt: null, settings: { graceMonthly: 7, graceAnnual: 30, ratioTh: 80 }, items: {} };
-      }
+      const STORE_KEY = `paymentWatch:v3:${companyId}`;
+      function defaultStore() { return { analyzed: {}, settings: { ratioTh: { '毎月': 70, '毎年': 60 } }, items: {} }; }
       function loadStore() {
         try {
           const raw = localStorage.getItem(STORE_KEY);
           if (!raw) return defaultStore();
-          const s = JSON.parse(raw);
-          return Object.assign(defaultStore(), s, { settings: Object.assign(defaultStore().settings, s.settings || {}) });
+          const s = JSON.parse(raw), d = defaultStore();
+          return { analyzed: s.analyzed || {}, items: s.items || {}, settings: { ratioTh: Object.assign(d.settings.ratioTh, (s.settings || {}).ratioTh || {}) } };
         } catch (e) { return defaultStore(); }
       }
       function saveStore() {
         try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); }
-        catch (e) { showError('ブラウザへの保存に失敗しました。設定CSVを出力して控えておいてください。'); }
+        catch (e) { showError('ブラウザへの保存に失敗しました。CSVを出力して控えておいてください。'); }
       }
       let store = loadStore();
 
       // ---------- 除外する勘定科目（全事業所共通） ----------
       const EXCLUDE_KEY = 'paymentWatch:v1:excludedAccounts';
-      // おすすめ: 単発・少額の支払が多く、毎月発生していても「請求書」ではないもの
       const RECOMMENDED_EXCLUDE = ['会議費', '交際費', '接待交際費', '旅費交通費', '消耗品費', '事務用品費', '雑費', '仮払金', '立替金'];
       function loadExcluded() {
         try { const raw = localStorage.getItem(EXCLUDE_KEY); if (raw) return new Set(JSON.parse(raw)); } catch (e) {}
@@ -394,20 +366,6 @@
       function saveExcluded() { try { localStorage.setItem(EXCLUDE_KEY, JSON.stringify([...excludedAccounts])); } catch (e) {} }
       let excludedAccounts = loadExcluded();
       const isExcluded = (it) => !!it.account && excludedAccounts.has(it.account);
-      // 手動変更していない取引先の支払方法（除外科目なら対象外、それ以外は自動判定）
-      const ratioTh = () => (Number(store.settings.ratioTh) || 0) / 100;
-      const meetsRatio = (it) => (it.ratio ?? 0) + 1e-9 >= ratioTh();
-      // 一覧に表示する取引先（継続率が基準以上、または手動で設定したもの）
-      const isVisible = (it) => it.manual || meetsRatio(it);
-      // 手動変更していない取引先の支払方法
-      const defaultFreq = (it) => (isExcluded(it) || !meetsRatio(it) ? '対象外' : it.auto);
-      function applyDefaults() { Object.values(store.items).forEach((it) => { if (!it.manual) it.freq = defaultFreq(it); }); }
-
-      function showError(msg) {
-        const box = document.getElementById('errorBox');
-        box.textContent = msg;
-        box.style.display = msg ? 'block' : 'none';
-      }
 
       // ---------- freee API ----------
       const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -448,29 +406,24 @@
         await Promise.all(Array.from({ length: Math.min(concurrency, tasks.length) }, worker));
         return results;
       }
+      // 過去の月はこの画面を開いている間キャッシュ（毎月→毎年の順に分析しても重複取得しない）
       const dealCache = {};
-      // 月単位に分割して並列取得（ページ送りが深くならないので速く安定する）
       async function fetchExpenseDeals(start, end, onProgress) {
         const chunks = [];
         let cur = new Date(start.getFullYear(), start.getMonth(), 1);
         while (cur <= end) {
-          const s = cur < start ? start : cur;
           const monthEnd = new Date(cur.getFullYear(), cur.getMonth() + 1, 0);
-          const e = monthEnd > end ? end : monthEnd;
-          chunks.push({ s: fmt(s), e: fmt(e) });
-          cur = new Date(cur.getFullYear(), cur.getMonth() + 1, 1);
+          chunks.push({ s: fmt(cur), e: fmt(monthEnd > end ? end : monthEnd), past: monthEnd < end });
+          cur = addMonths(cur, 1);
         }
-        // 過去の月はこの画面を開いている間キャッシュする（毎月→毎年の順に分析しても重複取得しない）
-        const todayStr = fmt(today0());
         const tasks = chunks.map((c) => async () => {
           const key = `${c.s}_${c.e}`;
           if (dealCache[key]) return dealCache[key];
           const res = await fetchAllPages(`/deals?company_id=${companyId}&type=expense&start_issue_date=${c.s}&end_issue_date=${c.e}`, 'deals');
-          if (c.e < todayStr) dealCache[key] = res;
+          if (c.past) dealCache[key] = res;
           return res;
         });
-        const res = await runPool(tasks, 3, onProgress);
-        return res.flat();
+        return (await runPool(tasks, 3, onProgress)).flat();
       }
       async function fetchPartnerMap() {
         const partners = await fetchAllPages(`/partners?company_id=${companyId}`, 'partners');
@@ -481,54 +434,85 @@
         const m = {}; (data.account_items || []).forEach((a) => { m[a.id] = a.name; }); return m;
       }
 
-      // ---------- 集計・判定 ----------
+      // ---------- 集計 ----------
       function mainAccountId(deal) {
         const det = deal.details || [];
         if (!det.length) return null;
         return det.reduce((a, b) => ((b.amount || 0) > (a.amount || 0) ? b : a)).account_item_id;
       }
-      function addDealToItem(item, deal, accountMap) {
-        if (item.history.some((h) => h.id === deal.id)) return false;
-        item.history.push({ id: deal.id, d: deal.issue_date, a: deal.amount || 0 });
-        item.history.sort((x, y) => (x.d < y.d ? -1 : x.d > y.d ? 1 : 0));
-        if (item.history.length > HISTORY_CAP) item.history = item.history.slice(-HISTORY_CAP);
-        const mk = deal.issue_date.slice(0, 7);
-        if (!item.months.includes(mk)) { item.months.push(mk); item.months.sort(); if (item.months.length > MONTHS_CAP) item.months = item.months.slice(-MONTHS_CAP); }
-        const acc = mainAccountId(deal);
-        if (acc && accountMap && accountMap[acc]) { item.accCount[accountMap[acc]] = (item.accCount[accountMap[acc]] || 0) + 1; }
-        return true;
+      // 取引先ごとに「月別の件数・金額」と「支払日の一覧」をまとめる
+      function aggregate(deals, partnerMap, accountMap) {
+        const map = {};
+        let noPartner = 0;
+        deals.forEach((d) => {
+          if (!d.partner_id) { noPartner++; return; }
+          const id = String(d.partner_id);
+          const p = map[id] || (map[id] = { id, name: partnerMap[d.partner_id] || `取引先ID ${id}`, mon: {}, dates: [], acc: {}, seen: {} });
+          if (p.seen[d.id]) return;
+          p.seen[d.id] = 1;
+          const k = d.issue_date.slice(0, 7);
+          const m = p.mon[k] || (p.mon[k] = [0, 0]);
+          m[0]++; m[1] += d.amount || 0;
+          p.dates.push(d.issue_date);
+          const acc = accountMap[mainAccountId(d)];
+          if (acc) p.acc[acc] = (p.acc[acc] || 0) + 1;
+        });
+        Object.values(map).forEach((p) => {
+          delete p.seen;
+          p.dates.sort();
+          const accs = Object.entries(p.acc).sort((a, b) => b[1] - a[1]);
+          p.account = accs.length ? accs[0][0] : '';
+          delete p.acc;
+          p.lastDate = p.dates[p.dates.length - 1];
+          p.day = median(p.dates.slice(-12).map((s) => parse(s).getDate()));
+          const amts = p.dates.length;
+          const total = Object.values(p.mon).reduce((a, m) => a + m[1], 0);
+          p.avg = total / amts;
+        });
+        return { map, noPartner };
       }
-      const monthsBetween = (a, b) => (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth());
 
-      // 毎月：直近13ヶ月で、最初の支払月〜最後の支払月のうち支払があった月の割合
-      function monthlyStats(months, today) {
-        const winStart = ymKey(new Date(today.getFullYear(), today.getMonth() - 12, 1));
-        const inWin = months.filter((m) => m >= winStart).sort();
-        if (inWin.length < 2) return null;
-        const set = new Set(inWin);
-        const lastD = parse(inWin[inWin.length - 1] + '-01');
-        let d = parse(inWin[0] + '-01'), span = 0, hits = 0, run = 0, streak = 0;
-        while (d <= lastD) {
+      // ---------- 継続率と漏れの判定（表示のたびに今日を基準に計算） ----------
+      // 毎月：最初の支払月〜今日（今月分が未登録なら先月まで）のうち支払があった月の割合
+      function monthlyStats(item, today) {
+        const cur = new Date(today.getFullYear(), today.getMonth(), 1);
+        const winStart = addMonths(cur, -12);
+        const has = (d) => !!item.mon[ymKey(d)];
+        let first = null;
+        for (let d = winStart; d <= cur; d = addMonths(d, 1)) if (has(d)) { first = d; break; }
+        if (!first) return null;
+        const curPaid = has(cur);
+        const end = curPaid ? cur : addMonths(cur, -1);
+        if (first > end) return null;
+        let span = 0, hits = 0, run = 0, streak = 0;
+        for (let d = first; d <= end; d = addMonths(d, 1)) {
           span++;
-          if (set.has(ymKey(d))) { hits++; run++; streak = Math.max(streak, run); } else run = 0;
-          d = new Date(d.getFullYear(), d.getMonth() + 1, 1);
+          if (has(d)) { hits++; run++; streak = Math.max(streak, run); } else run = 0;
         }
         if (streak < 2) return null; // 一度も連続していない
-        return { ratio: hits / span, note: `${hits}/${span}ヶ月`, stale: monthsBetween(lastD, today) >= 6 };
+        let trail = 0;
+        for (let d = end; d >= first && !has(d); d = addMonths(d, -1)) trail++;
+        const expectedThisMonth = dateIn(today.getFullYear(), today.getMonth(), item.day);
+        const curLate = !curPaid && addDays(expectedThisMonth, GRACE_MONTHLY) < today;
+        const missing = trail + (curLate ? 1 : 0);
+        let flag;
+        if (missing > 0) flag = { cls: 'miss', text: missing === 1 && curLate ? '今月分が未登録' : `${missing}ヶ月分が未登録` };
+        else if (!curPaid) flag = { cls: 'wait', text: `今月分は${item.day}日頃` };
+        else flag = { cls: 'ok', text: '今月分登録済み' };
+        return { ratio: hits / span, note: `${hits}/${span}ヶ月`, first, curPaid, curLate, alert: missing > 0, flag };
       }
 
-      // 毎年：直近25ヶ月で、約1年間隔の支払が連続しているか
-      function annualStats(history, today) {
-        const winStart = new Date(today.getFullYear(), today.getMonth() - 24, 1);
-        const recentStart = new Date(today.getFullYear(), today.getMonth() - 12, 1);
-        const dates = history.map((h) => parse(h.d)).filter((d) => d >= winStart).sort((a, b) => a - b);
+      // 毎年：約1年間隔で連続して支払があり、毎年の支払時期（前後45日）に支払があった割合
+      function annualStats(item, today) {
+        const winStart = addMonths(new Date(today.getFullYear(), today.getMonth(), 1), -36);
+        const recentStart = addMonths(new Date(today.getFullYear(), today.getMonth(), 1), -12);
+        const dates = item.dates.map(parse).filter((d) => d >= winStart);
         if (dates.length < 2) return null;
         if (new Set(dates.filter((d) => d >= recentStart).map(ymKey)).size > 2) return null; // 頻繁すぎる
-        // 60日以内の支払は1回分としてまとめる
-        const reps = [];
+        const reps = []; // 60日以内の支払は1回分としてまとめる
         dates.forEach((d) => {
-          const lastRep = reps[reps.length - 1];
-          if (!lastRep || dayDiff(d, lastRep.last) > 60) reps.push({ first: d, last: d }); else lastRep.last = d;
+          const r = reps[reps.length - 1];
+          if (!r || dayDiff(d, r.last) > 60) reps.push({ first: d, last: d }); else r.last = d;
         });
         let consecutive = false;
         for (let i = 1; i < reps.length; i++) {
@@ -536,147 +520,153 @@
           if (g >= 330 && g <= 400) { consecutive = true; break; }
         }
         if (!consecutive) return null;
-        const f = reps[0].first, lastRep = reps[reps.length - 1].first;
-        let expected = 0, hits = 0;
-        for (let k = 0; ; k++) {
-          const ann = new Date(f.getFullYear() + k, f.getMonth(), f.getDate());
-          if (dayDiff(ann, lastRep) > 45) break;
-          expected++;
-          if (reps.some((r) => Math.abs(dayDiff(r.first, ann)) <= 45)) hits++;
+        const f = reps[0].first;
+        const anns = []; let hits = 0, counted = 0, next = null;
+        for (let k = 0; k < 6; k++) {
+          const ann = dateIn(f.getFullYear() + k, f.getMonth(), f.getDate());
+          if (reps.some((r) => Math.abs(dayDiff(r.first, ann)) <= 45)) { anns.push({ ann, state: 'hit' }); hits++; counted++; }
+          else if (addDays(ann, GRACE_ANNUAL) < today) { anns.push({ ann, state: 'miss' }); counted++; }
+          else { anns.push({ ann, state: 'next' }); next = ann; break; }
         }
-        return { ratio: hits / expected, note: `${hits}/${expected}年`, stale: false };
+        const lastCounted = anns.filter((a) => a.state !== 'next').pop();
+        const alert = !!lastCounted && lastCounted.state === 'miss';
+        let flag;
+        if (alert) flag = { cls: 'miss', text: `${lastCounted.ann.getFullYear()}年分が未登録（${lastCounted.ann.getMonth() + 1}月頃）` };
+        else if (next && next <= today) flag = { cls: 'wait', text: `予定日を過ぎています（${next.getMonth() + 1}月${next.getDate()}日頃・猶予内）` };
+        else if (next && dayDiff(next, today) <= 30) flag = { cls: 'wait', text: `まもなく（${next.getMonth() + 1}月${next.getDate()}日頃）` };
+        else flag = { cls: 'ok', text: next ? `次回 ${next.getFullYear()}年${next.getMonth() + 1}月頃` : '登録済み' };
+        return { ratio: counted ? hits / counted : 0, note: `${hits}/${counted}年`, anns, alert, flag };
       }
-      const statsFor = (kind, item, today) => (kind === '毎年' ? annualStats(item.history, today) : monthlyStats(item.months, today));
+      const statsFor = (it, today) => (it.kind === '毎年' ? annualStats(it, today) : monthlyStats(it, today));
+      const thOf = (kind) => (Number(store.settings.ratioTh[kind]) || 0) / 100;
 
-      function recompute(item, today) {
-        const h = item.history;
-        if (!h.length) return;
-        const last = h[h.length - 1];
-        item.lastDate = last.d;
-        const recentAmts = h.slice(-6).map((x) => x.a);
-        item.avg = recentAmts.reduce((a, b) => a + b, 0) / recentAmts.length;
-        item.day = median(h.slice(-12).map((x) => parse(x.d).getDate()));
-        item.month = parse(last.d).getMonth() + 1;
-        const accs = Object.entries(item.accCount || {});
-        item.account = accs.length ? accs.sort((a, b) => b[1] - a[1])[0][0] : '';
-        if (item.auto) {
-          const st = statsFor(item.auto, item, today);
-          if (st) { item.ratio = st.ratio; item.ratioNote = st.note; }
-        }
-        if (!item.manual) item.freq = defaultFreq(item);
+      // ---------- 登録履歴の描画 ----------
+      function monthlyHistoryHtml(it, st, today) {
+        const cur = new Date(today.getFullYear(), today.getMonth(), 1);
+        const months = []; for (let i = 12; i >= 0; i--) months.push(addMonths(cur, -i));
+        const max = Math.max(1, ...months.map((d) => (it.mon[ymKey(d)] || [0, 0])[1]));
+        const cells = months.map((d, idx) => {
+          const k = ymKey(d), m = it.mon[k];
+          const isCur = idx === months.length - 1;
+          let cls = '', bar = '', tip = `${d.getFullYear()}年${d.getMonth() + 1}月：`;
+          if (m) { cls = 'on'; bar = `<i class="tl-bar" style="height:${Math.max(18, Math.round((m[1] / max) * 100))}%"></i>`; tip += `${m[0]}件 ${yen(m[1])}`; }
+          else if (st && d < st.first) { cls = 'pre'; tip += '最初の支払より前'; }
+          else if (isCur) { cls = st && st.curLate ? 'late' : 'wait'; tip += st && st.curLate ? `未登録（予定 ${it.day}日頃）` : `予定日前（${it.day}日頃）`; }
+          else { cls = 'miss'; tip += '支払なし'; }
+          const lbl = d.getMonth() === 0 || idx === 0 ? `<span class="tl-lbl yr">${String(d.getFullYear()).slice(2)}/${d.getMonth() + 1}</span>` : `<span class="tl-lbl">${d.getMonth() + 1}</span>`;
+          return `<div class="tl-cell ${cls}" title="${esc(tip)}"><div class="tl-track">${bar}</div>${lbl}</div>`;
+        }).join('');
+        return `<div class="tl" role="img" aria-label="直近13ヶ月の登録履歴">${cells}</div>`;
       }
-      function mergeHistory(target, src) {
-        src.history.forEach((h) => { if (!target.history.some((x) => x.id === h.id)) target.history.push(h); });
-        target.history.sort((x, y) => (x.d < y.d ? -1 : x.d > y.d ? 1 : 0));
-        if (target.history.length > HISTORY_CAP) target.history = target.history.slice(-HISTORY_CAP);
-        target.months = [...new Set([...target.months, ...src.months])].sort().slice(-MONTHS_CAP);
-        target.accCount = src.accCount;
-      }
-      function newItem(id, name) {
-        return { id, name: name || `取引先ID ${id}`, history: [], months: [], accCount: {}, freq: '対象外', manual: false };
-      }
-
-      // ---------- 予定日の評価 ----------
-      function evaluate(item, today) {
-        if (item.freq === '対象外' || !item.lastDate) return null;
-        const last = parse(item.lastDate);
-        const g = store.settings;
-        if (item.freq === '毎月') {
-          const grace = Number(g.graceMonthly) || 0;
-          const missed = [];
-          let m = new Date(last.getFullYear(), last.getMonth() + 1, 1);
-          while (true) {
-            const exp = dateIn(m.getFullYear(), m.getMonth(), item.day);
-            if (addDays(exp, grace) < today) { missed.push(exp); m = new Date(m.getFullYear(), m.getMonth() + 1, 1); }
-            else break;
+      function annualHistoryHtml(it, st, today) {
+        const winStart = addMonths(new Date(today.getFullYear(), today.getMonth(), 1), -36);
+        const missMonths = new Set(), waitMonths = new Set();
+        (st ? st.anns : []).forEach((a) => {
+          if (a.state === 'miss') missMonths.add(ymKey(a.ann));
+          if (a.state === 'next') waitMonths.add(ymKey(a.ann));
+        });
+        let html = '<div class="yg" role="img" aria-label="年ごとの登録履歴"><span></span>';
+        for (let m = 1; m <= 12; m++) html += `<span class="h">${m}</span>`;
+        for (let y = winStart.getFullYear(); y <= today.getFullYear(); y++) {
+          html += `<span class="y">${y}</span>`;
+          for (let m0 = 0; m0 < 12; m0++) {
+            const d = new Date(y, m0, 1), k = ymKey(d), mm = it.mon[k];
+            let cls = '', tip = `${y}年${m0 + 1}月：`;
+            if (d < winStart) { cls = 'out'; tip = ''; }
+            else if (mm) { cls = 'on'; tip += `${mm[0]}件 ${yen(mm[1])}`; }
+            else if (missMonths.has(k)) { cls = 'miss'; tip += '支払予定の時期に支払なし'; }
+            else if (waitMonths.has(k)) { cls = 'wait'; tip += '次回の支払予定'; }
+            else if (d > today) { cls = 'future'; tip = ''; }
+            else tip += 'なし';
+            html += `<span class="c ${cls}"${tip ? ` title="${esc(tip)}"` : ''}></span>`;
           }
-          if (missed.length) return { status: 'missing', next: missed[0], overdue: dayDiff(today, missed[0]), missedCount: missed.length };
-          if (ymKey(last) === ymKey(today)) return { status: 'ok', next: dateIn(today.getFullYear(), today.getMonth() + 1, item.day) };
-          const exp = dateIn(m.getFullYear(), m.getMonth(), item.day);
-          if (exp <= today) return { status: 'grace', next: exp, overdue: dayDiff(today, exp) };
-          if (dayDiff(exp, today) <= 7) return { status: 'soon', next: exp };
-          return { status: 'ok', next: exp };
         }
-        // 毎年
-        const grace = Number(g.graceAnnual) || 0;
-        const next = dateIn(last.getFullYear() + 1, item.month - 1, item.day);
-        if (addDays(next, grace) < today) {
-          let years = 1;
-          while (addDays(dateIn(last.getFullYear() + years + 1, item.month - 1, item.day), grace) < today) years++;
-          return { status: 'missing', next, overdue: dayDiff(today, next), missedCount: years };
-        }
-        if (next <= today) return { status: 'grace', next, overdue: dayDiff(today, next) };
-        if (dayDiff(next, today) <= 30) return { status: 'soon', next };
-        return { status: 'ok', next };
+        return html + '</div>';
+      }
+      function historyHtml(it, st, today) {
+        const th = thOf(it.kind);
+        const pct = st ? Math.round(st.ratio * 100) : 0;
+        const body = it.kind === '毎年' ? annualHistoryHtml(it, st, today) : monthlyHistoryHtml(it, st, today);
+        const flags = [];
+        if (st) flags.push(`<span class="flag ${st.flag.cls}">${esc(st.flag.text)}</span>`);
+        if (isExcluded(it)) flags.push('<span class="flag ex">除外する勘定科目</span>');
+        if (st && st.ratio + 1e-9 < th) flags.push('<span class="flag ex">継続率が基準未満</span>');
+        return `${body}<div class="hist-foot"><span class="meter ${st && st.ratio + 1e-9 < th ? 'low' : ''}"><i style="width:${pct}%"></i></span><span>継続率 ${pct}%（${esc(st ? st.note : '—')}）</span>${flags.join('')}</div>`;
+      }
+      function timingText(it) {
+        if (it.kind === '毎年') { const d = parse(it.lastDate); return `毎年 ${d.getMonth() + 1}月${d.getDate()}日頃`; }
+        return `毎月 ${it.day}日頃`;
       }
 
-      // ---------- 描画：登録履歴のマス ----------
-      function monthsHtml(item, count) {
-        const t = today0();
-        const set = new Set(item.months);
-        let html = '<span class="months" aria-label="登録履歴">';
-        for (let i = count - 1; i >= 0; i--) {
-          const d = new Date(t.getFullYear(), t.getMonth() - i, 1);
-          const k = ymKey(d);
-          const cls = [set.has(k) ? 'on' : '', d.getMonth() === 0 && i !== count - 1 ? 'jan' : '', i === 0 ? 'cur' : ''].join(' ').trim();
-          html += `<i class="${cls}" title="${d.getFullYear()}年${d.getMonth() + 1}月${set.has(k) ? '：登録あり' : '：なし'}"></i>`;
-        }
-        return html + '</span>';
+      // ---------- 一覧 ----------
+      let viewFilter = 'all';
+      function computeRows() {
+        const today = today0();
+        return Object.values(store.items).map((it) => {
+          const st = statsFor(it, today);
+          const visible = !!st && !isExcluded(it) && st.ratio + 1e-9 >= thOf(it.kind);
+          return { it, st, visible, alert: visible && st.alert };
+        });
       }
-      function timingText(item) {
-        if (item.freq === '毎年') return `毎年 ${item.month}月${item.day}日頃`;
-        if (item.freq === '毎月') return `毎月 ${item.day}日頃`;
-        return `${item.day}日頃`;
+      function currentRows() {
+        const all = computeRows();
+        const showHidden = document.getElementById('showHidden').checked;
+        const q = document.getElementById('search').value.trim().toLowerCase();
+        return all
+          .filter((r) => showHidden || r.visible)
+          .filter((r) => viewFilter === 'all' || (viewFilter === 'alert' ? r.alert : r.it.kind === viewFilter))
+          .filter((r) => !q || r.it.name.toLowerCase().includes(q) || (r.it.account || '').toLowerCase().includes(q))
+          .sort((a, b) => (b.alert - a.alert) || (b.visible - a.visible) || (a.it.kind < b.it.kind ? -1 : a.it.kind > b.it.kind ? 1 : 0) || a.it.name.localeCompare(b.it.name, 'ja'));
       }
-
-      // ---------- 描画：支払方法の設定 ----------
-      let masterFilter = 'all';
-      function itemsArray() { return Object.values(store.items); }
-      function renderMaster() {
-        const section = document.getElementById('masterSection');
-        const items = itemsArray();
-        if (!items.length) { section.classList.add('hidden'); return; }
+      function render() {
+        renderMeta();
+        const section = document.getElementById('resultSection');
+        const all = computeRows();
+        if (!all.length) { section.classList.add('hidden'); return; }
         section.classList.remove('hidden');
-        document.getElementById('checkSection').classList.remove('hidden');
-        renderExcludePanel(items);
 
-        const showBelow = document.getElementById('showBelow').checked;
-        const hiddenCount = items.filter((it) => !isVisible(it)).length;
-        document.getElementById('hiddenNote').textContent = hiddenCount ? `継続率が基準未満: ${hiddenCount}件${showBelow ? '' : '（非表示）'}` : '';
-        const q = document.getElementById('masterSearch').value.trim().toLowerCase();
-        const base = items.filter((it) => showBelow || isVisible(it));
-        document.getElementById('cntAll').textContent = base.length;
-        document.getElementById('cntM').textContent = base.filter((i) => i.freq === '毎月').length;
-        document.getElementById('cntY').textContent = base.filter((i) => i.freq === '毎年').length;
-        document.getElementById('cntX').textContent = base.filter((i) => i.freq === '対象外').length;
+        const vis = all.filter((r) => r.visible);
+        const alertN = vis.filter((r) => r.alert).length;
+        const mN = vis.filter((r) => r.it.kind === '毎月').length;
+        const yN = vis.filter((r) => r.it.kind === '毎年').length;
+        document.getElementById('statAlert').textContent = `${alertN} 件`;
+        document.getElementById('statM').textContent = `${mN} 件`;
+        document.getElementById('statY').textContent = `${yN} 件`;
+        document.getElementById('cntAll').textContent = vis.length;
+        document.getElementById('cntAlert').textContent = alertN;
+        document.getElementById('cntM').textContent = mN;
+        document.getElementById('cntY').textContent = yN;
+        const hiddenN = all.length - vis.length;
+        const showHidden = document.getElementById('showHidden').checked;
+        document.getElementById('hiddenNote').textContent = hiddenN ? `基準未満・除外科目: ${hiddenN}件${showHidden ? '' : '（非表示）'}` : '';
+        renderExcludePanel(all.map((r) => r.it));
 
-        const order = { '毎月': 0, '毎年': 1, '対象外': 2 };
-        const rows = base
-          .filter((it) => masterFilter === 'all' || it.freq === masterFilter)
-          .filter((it) => !q || it.name.toLowerCase().includes(q) || (it.account || '').toLowerCase().includes(q))
-          .sort((a, b) => order[a.freq] - order[b.freq] || b.avg - a.avg);
-
-        const tbody = document.getElementById('masterBody');
-        if (!rows.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="8">条件に合う取引先はありません。</td></tr>'; return; }
-        tbody.innerHTML = rows.map((it) => `
-          <tr>
-            <td style="text-align:center;">
-              <div class="freq-group" data-id="${esc(it.id)}">
-                ${['毎月', '毎年', '対象外'].map((f) => `<button type="button" class="freq-btn ${it.freq === f ? 'active' : ''}" data-freq="${f}" aria-pressed="${it.freq === f}">${f}</button>`).join('')}
-              </div>
-              ${it.manual ? '<span class="manual-mark">手動で変更</span>' : ''}
-            </td>
-            <td><b style="color:var(--text-main);">${esc(it.name)}</b></td>
+        const today = today0();
+        const rows = currentRows();
+        const tbody = document.getElementById('resultBody');
+        if (!rows.length) {
+          tbody.innerHTML = `<tr class="empty-row"><td colspan="5">${viewFilter === 'alert' ? '漏れの疑いがある取引先はありません。' : '条件に合う取引先はありません。'}</td></tr>`;
+          return;
+        }
+        tbody.innerHTML = rows.map(({ it, st, visible, alert }) => `
+          <tr class="${alert ? 'alert-row' : ''}" style="${visible ? '' : 'opacity:0.6;'}">
+            <td><span class="freq-chip ${it.kind === '毎月' ? 'm' : 'y'}">${it.kind}</span><b style="color:var(--text-main);">${esc(it.name)}</b></td>
             <td>${esc(it.account || '—')}</td>
-            <td class="num">${yen(it.avg)}</td>
-            <td class="nowrap">${monthsHtml(it, it.auto === '毎年' ? 25 : 13)}</td>
+            <td>${historyHtml(it, st, today)}</td>
             <td class="nowrap">${esc(timingText(it))}</td>
-            <td class="nowrap">${it.lastDate ? fmtJp(parse(it.lastDate)) : '—'}</td>
-            <td class="nowrap" style="font-size:12px; color:var(--text-muted);">${esc(it.auto)}<span class="sub">継続率 ${Math.round((it.ratio || 0) * 100)}%（${esc(it.ratioNote || '')}）</span>${isExcluded(it) ? '<span class="sub" style="color:#991b1b;">除外する勘定科目</span>' : ''}${!meetsRatio(it) ? '<span class="sub" style="color:#b45309;">基準未満</span>' : ''}</td>
+            <td class="nowrap">${fmtJp(parse(it.lastDate))}</td>
           </tr>`).join('');
       }
+      document.getElementById('viewFilter').addEventListener('click', (e) => {
+        const b = e.target.closest('button'); if (!b) return;
+        viewFilter = b.dataset.f;
+        document.querySelectorAll('#viewFilter button').forEach((x) => x.classList.toggle('active', x === b));
+        render();
+      });
+      document.getElementById('search').addEventListener('input', render);
+      document.getElementById('showHidden').addEventListener('change', render);
+
       function renderExcludePanel(items) {
-        // この事業所に出てくる勘定科目と、その科目が主な取引先の数
         const counts = {};
         items.forEach((it) => { if (it.account) counts[it.account] = (counts[it.account] || 0) + 1; });
         const names = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
@@ -686,75 +676,46 @@
         document.getElementById('excludeLists').innerHTML =
           `<div class="acc-group-title">除外中（${on.length}科目）</div><div class="acc-list">${on.map(chip).join('') || '<span class="exclude-help">なし</span>'}</div>` +
           `<div class="acc-group-title">チェック対象（${off.length}科目）</div><div class="acc-list">${off.map(chip).join('') || '<span class="exclude-help">なし</span>'}</div>`;
-        const affected = items.filter((it) => isExcluded(it)).length;
-        document.getElementById('excludeSummary').textContent = `${on.length}科目を除外中（取引先 ${affected}件）`;
+        document.getElementById('excludeSummary').textContent = `${on.length}科目を除外中（取引先 ${items.filter(isExcluded).length}件）`;
       }
       document.getElementById('excludeLists').addEventListener('change', (e) => {
         const cb = e.target.closest('input[data-acc]'); if (!cb) return;
         if (cb.checked) excludedAccounts.add(cb.dataset.acc); else excludedAccounts.delete(cb.dataset.acc);
-        saveExcluded(); applyDefaults(); saveStore(); renderMeta(); renderMaster();
-        if (lastResults) renderResults();
+        saveExcluded(); render();
       });
       document.getElementById('resetExcludeBtn').addEventListener('click', () => {
-        excludedAccounts = new Set(RECOMMENDED_EXCLUDE);
-        saveExcluded(); applyDefaults(); saveStore(); renderMeta(); renderMaster();
-        if (lastResults) renderResults();
+        excludedAccounts = new Set(RECOMMENDED_EXCLUDE); saveExcluded(); render();
       });
-
-      document.getElementById('masterBody').addEventListener('click', (e) => {
-        const btn = e.target.closest('.freq-btn');
-        if (!btn) return;
-        const id = btn.closest('.freq-group').dataset.id;
-        const it = store.items[id];
-        if (!it) return;
-        it.freq = btn.dataset.freq;
-        it.manual = it.freq !== defaultFreq(it);
-        saveStore();
-        renderMaster();
-        if (lastResults) renderResults();
-      });
-      document.getElementById('masterFilter').addEventListener('click', (e) => {
-        const b = e.target.closest('button'); if (!b) return;
-        masterFilter = b.dataset.f;
-        document.querySelectorAll('#masterFilter button').forEach((x) => x.classList.toggle('active', x === b));
-        renderMaster();
-      });
-      document.getElementById('masterSearch').addEventListener('input', renderMaster);
-      document.getElementById('showBelow').addEventListener('change', renderMaster);
 
       function renderMeta() {
-        const a = document.getElementById('analyzeMeta');
-        const c = document.getElementById('checkMeta');
-        const lines = ['毎月', '毎年'].map((k) => {
+        document.getElementById('analyzeMeta').innerHTML = ['毎月', '毎年'].map((k) => {
           const info = store.analyzed[k];
           if (!info) return `${k}: まだ分析していません`;
-          const n = itemsArray().filter((it) => it.auto === k && isVisible(it)).length;
-          let line = `${k}: ${fmtJp(new Date(info.at))}に分析（直近${info.months}ヶ月）／ 一覧 ${n}件`;
-          if (info.noPartner) line += `／ 取引先未設定の取引 ${info.noPartner}件`;
-          if (dayDiff(today0(), new Date(info.at)) > 180) line += ' <b style="color:#b45309;">半年以上たっています。再分析をおすすめします</b>';
+          let line = `${k}: ${fmtJp(new Date(info.at))}に分析（直近${info.months}ヶ月）`;
+          if (info.noPartner) line += `／ 取引先未設定の取引 ${info.noPartner}件は集計対象外`;
+          if (dayDiff(today0(), new Date(info.at)) > 31) line += ' <b style="color:#b45309;">1ヶ月以上前の分析です。最新の登録状況を見るには再分析してください</b>';
           return line;
-        });
-        a.innerHTML = lines.join('<br>');
-        c.textContent = store.lastCheckAt ? `前回チェック: ${fmtJp(new Date(store.lastCheckAt))}` : '';
+        }).join('<br>');
       }
 
-      // 分析する頻度の切り替え・継続率の基準
+      // ---------- 分析 ----------
       let analyzeKind = '毎月';
+      const ratioInput = document.getElementById('ratioTh');
+      function syncKindUi() {
+        document.querySelectorAll('#kindSelect button').forEach((x) => { const on = x.dataset.k === analyzeKind; x.classList.toggle('active', on); x.setAttribute('aria-pressed', on); });
+        document.getElementById('runAnalyzeBtn').textContent = `${analyzeKind}の支払を分析する`;
+        ratioInput.value = store.settings.ratioTh[analyzeKind];
+      }
       document.getElementById('kindSelect').addEventListener('click', (e) => {
         const b = e.target.closest('button'); if (!b) return;
-        analyzeKind = b.dataset.k;
-        document.querySelectorAll('#kindSelect button').forEach((x) => { x.classList.toggle('active', x === b); x.setAttribute('aria-pressed', x === b); });
-        document.getElementById('runAnalyzeBtn').textContent = `${analyzeKind}の支払を分析する`;
+        analyzeKind = b.dataset.k; syncKindUi();
       });
-      const ratioInput = document.getElementById('ratioTh');
       ratioInput.addEventListener('change', () => {
-        store.settings.ratioTh = Math.min(100, Math.max(0, Number(ratioInput.value) || 0));
-        ratioInput.value = store.settings.ratioTh;
-        applyDefaults(); saveStore(); renderMeta(); renderMaster();
-        if (lastResults) renderResults();
+        const v = Math.min(100, Math.max(0, Number(ratioInput.value) || 0));
+        store.settings.ratioTh[analyzeKind] = v; ratioInput.value = v;
+        saveStore(); render();
       });
 
-      // ---------- 1. 分析 ----------
       document.getElementById('runAnalyzeBtn').addEventListener('click', async () => {
         const btn = document.getElementById('runAnalyzeBtn');
         const loading = document.getElementById('analyzeLoading');
@@ -764,9 +725,9 @@
         btn.disabled = true; loading.classList.remove('hidden'); bar.style.width = '0%';
         try {
           const kind = analyzeKind;
-          const months = kind === '毎年' ? 25 : 13;
+          const months = WINDOW[kind];
           const today = today0();
-          const start = new Date(today.getFullYear(), today.getMonth() - (months - 1), 1);
+          const start = addMonths(new Date(today.getFullYear(), today.getMonth(), 1), -(months - 1));
 
           text.textContent = '取引先・勘定科目を取得中...';
           const [partnerMap, accountMap] = await Promise.all([fetchPartnerMap(), fetchAccountMap()]);
@@ -778,159 +739,24 @@
           });
 
           text.textContent = `${deals.length.toLocaleString()}件の取引を集計中...`;
-          const fetched = {};
-          let noPartner = 0;
-          deals.forEach((d) => {
-            if (!d.partner_id) { noPartner++; return; }
-            const id = String(d.partner_id);
-            if (!fetched[id]) fetched[id] = newItem(id, partnerMap[d.partner_id]);
-            addDealToItem(fetched[id], d, accountMap);
-          });
+          const { map, noPartner } = aggregate(deals, partnerMap, accountMap);
 
-          const items = store.items;
-          Object.values(fetched).forEach((tmp) => {
-            const st = statsFor(kind, tmp, today);
-            const existing = items[tmp.id];
-            if (!st || st.stale) {
-              // この頻度の候補ではなくなった（手動設定したものは残す）
-              if (existing && existing.auto === kind && !existing.manual) delete items[tmp.id];
-              return;
-            }
-            // 毎年として登録済みの取引先は、毎月の継続率が基準以上のときだけ毎月に切り替える
-            if (kind === '毎月' && existing && existing.auto === '毎年' && st.ratio < ratioTh()) return;
-            const it = existing || newItem(tmp.id, tmp.name);
-            it.name = tmp.name;
-            mergeHistory(it, tmp);
-            it.auto = kind; it.ratio = st.ratio; it.ratioNote = st.note;
-            items[it.id] = it;
-            recompute(it, today);
-            if (it.manual && it.freq === defaultFreq(it)) it.manual = false;
+          // この頻度の結果を入れ替える（連続した支払がある取引先だけ保存。基準未満も保存し、基準の変更にすぐ対応）
+          Object.keys(store.items).forEach((key) => { if (store.items[key].kind === kind) delete store.items[key]; });
+          Object.values(map).forEach((p) => {
+            const it = Object.assign(p, { kind });
+            it.dates = kind === '毎年' ? it.dates.slice(-60) : []; // 毎月は月別集計だけで判定できる
+            if (!statsFor(it, today)) return;
+            store.items[`${kind}:${it.id}`] = it;
           });
-          // 期間内に取引がなかった同じ頻度の取引先は外す（手動設定したものは残す）
-          Object.values(items).forEach((it) => { if (it.auto === kind && !it.manual && !fetched[it.id]) delete items[it.id]; });
-
           store.analyzed[kind] = { at: new Date().toISOString(), months, noPartner };
-          if (!store.lastSync) store.lastSync = fmt(today);
           saveStore();
-          lastResults = null;
-          document.getElementById('checkResult').classList.add('hidden');
-          renderMeta(); renderMaster();
+          render();
         } catch (err) {
           showError('分析に失敗しました: ' + err.message);
         } finally {
           loading.classList.add('hidden'); btn.disabled = false;
         }
-      });
-
-      // ---------- 3. チェック ----------
-      const graceM = document.getElementById('graceMonthly');
-      const graceY = document.getElementById('graceAnnual');
-      function syncGraceInputs() { graceM.value = store.settings.graceMonthly; graceY.value = store.settings.graceAnnual; }
-      [graceM, graceY].forEach((el) => el.addEventListener('change', () => {
-        store.settings.graceMonthly = Math.max(0, Number(graceM.value) || 0);
-        store.settings.graceAnnual = Math.max(0, Number(graceY.value) || 0);
-        saveStore();
-        if (lastResults) { lastResults = buildResults(); renderResults(); }
-      }));
-
-      let lastResults = null;
-      let resultFilter = 'missing';
-      function buildResults() {
-        const today = today0();
-        return itemsArray().map((it) => ({ it, ev: evaluate(it, today) })).filter((r) => r.ev);
-      }
-
-      document.getElementById('runCheckBtn').addEventListener('click', async () => {
-        const btn = document.getElementById('runCheckBtn');
-        const loading = document.getElementById('checkLoading');
-        const text = document.getElementById('checkLoadingText');
-        showError('');
-        if (!itemsArray().length) { showError('先に「支払頻度を分析する」を実行してください。'); return; }
-        btn.disabled = true; loading.classList.remove('hidden');
-        try {
-          const today = today0();
-          // (a) 前回同期の7日前から今日までの差分だけ取得
-          const from = addDays(parse(store.lastSync || fmt(addDays(today, -40))), -7);
-          text.textContent = '前回以降の取引を取得中...';
-          const [accountMap, deals] = await Promise.all([fetchAccountMap(), fetchExpenseDeals(from, today)]);
-          deals.forEach((d) => {
-            if (!d.partner_id) return;
-            const it = store.items[String(d.partner_id)];
-            if (it) addDealToItem(it, d, accountMap);
-          });
-          itemsArray().forEach((it) => recompute(it, today));
-
-          // (b) 漏れ疑いだけ取引先指定で再確認（発生日をさかのぼって登録された取引を拾う）
-          const candidates = itemsArray().filter((it) => { const ev = evaluate(it, today); return ev && ev.status === 'missing'; });
-          if (candidates.length) {
-            text.textContent = `漏れの疑いがある ${candidates.length}件を個別に確認中...`;
-            await runPool(candidates.map((it) => async () => {
-              const since = fmt(addDays(parse(it.lastDate), 1));
-              const hits = await fetchAllPages(`/deals?company_id=${companyId}&type=expense&partner_id=${it.id}&start_issue_date=${since}&end_issue_date=${fmt(today)}`, 'deals');
-              hits.forEach((d) => addDealToItem(it, d, accountMap));
-              recompute(it, today);
-            }), 3, (d, t) => { text.textContent = `漏れの疑いがある取引先を個別に確認中... ${d}/${t}`; });
-          }
-
-          store.lastSync = fmt(today);
-          store.lastCheckAt = new Date().toISOString();
-          saveStore();
-          lastResults = buildResults();
-          renderMeta(); renderMaster(); renderResults();
-          document.getElementById('checkResult').classList.remove('hidden');
-        } catch (err) {
-          showError('チェックに失敗しました: ' + err.message);
-        } finally {
-          loading.classList.add('hidden'); btn.disabled = false;
-        }
-      });
-
-      const STATUS_LABEL = { missing: '漏れの疑い', grace: '猶予期間中', soon: 'まもなく', ok: '登録済み' };
-      const STATUS_ORDER = { missing: 0, grace: 1, soon: 2, ok: 3 };
-      function statusText(ev) {
-        if (ev.status === 'missing') return ev.missedCount > 1 ? `${ev.overdue}日超過（${ev.missedCount}回分なし）` : `${ev.overdue}日超過`;
-        if (ev.status === 'grace') return `予定日から${ev.overdue}日経過`;
-        if (ev.status === 'soon') return `あと${dayDiff(ev.next, today0())}日`;
-        return '—';
-      }
-      function filteredResults(f) {
-        const list = (lastResults || []).slice().sort((a, b) =>
-          STATUS_ORDER[a.ev.status] - STATUS_ORDER[b.ev.status] || (b.ev.overdue || 0) - (a.ev.overdue || 0) || a.ev.next - b.ev.next);
-        if (f === 'missing') return list.filter((r) => r.ev.status === 'missing');
-        if (f === 'attention') return list.filter((r) => r.ev.status !== 'ok');
-        return list;
-      }
-      function renderResults() {
-        if (!lastResults) return;
-        lastResults = buildResults();
-        const c = (s) => lastResults.filter((r) => r.ev.status === s).length;
-        document.getElementById('statMissing').textContent = c('missing') + ' 件';
-        document.getElementById('statGrace').textContent = c('grace') + ' 件';
-        document.getElementById('statSoon').textContent = c('soon') + ' 件';
-        document.getElementById('statOk').textContent = c('ok') + ' 件';
-        const rows = filteredResults(resultFilter);
-        const tbody = document.getElementById('resultBody');
-        if (!rows.length) {
-          tbody.innerHTML = `<tr class="empty-row"><td colspan="8">${resultFilter === 'missing' ? '登録漏れの疑いはありません。' : '該当する取引先はありません。'}</td></tr>`;
-          return;
-        }
-        tbody.innerHTML = rows.map(({ it, ev }) => `
-          <tr>
-            <td><span class="badge ${ev.status}">${STATUS_LABEL[ev.status]}</span></td>
-            <td><span class="freq-chip ${it.freq === '毎月' ? 'm' : 'y'}">${it.freq}</span> <b style="color:var(--text-main);">${esc(it.name)}</b></td>
-            <td>${esc(it.account || '—')}</td>
-            <td class="num">${yen(it.avg)}</td>
-            <td class="nowrap">${fmtJp(ev.next)}</td>
-            <td class="nowrap">${fmtJp(parse(it.lastDate))}</td>
-            <td class="nowrap ${ev.status === 'missing' ? 'overdue' : ''}">${esc(statusText(ev))}</td>
-            <td class="nowrap">${monthsHtml(it, it.auto === '毎年' ? 25 : 13)}</td>
-          </tr>`).join('');
-      }
-      document.getElementById('resultFilter').addEventListener('click', (e) => {
-        const b = e.target.closest('button'); if (!b) return;
-        resultFilter = b.dataset.f;
-        document.querySelectorAll('#resultFilter button').forEach((x) => x.classList.toggle('active', x === b));
-        renderResults();
       });
 
       // ---------- CSV ----------
@@ -943,83 +769,35 @@
         document.body.appendChild(a); a.click();
         document.body.removeChild(a); URL.revokeObjectURL(url);
       }
-      const safeName = (companyName || companyId).replace(/[\\/:*?"<>|\s]/g, '_');
-      const stamp = () => fmt(today0()).replace(/-/g, '');
-
-      function exportResults(f) {
-        const rows = filteredResults(f);
-        if (!rows.length) { alert('出力するデータがありません。'); exportDropdownMenu.classList.remove('show'); return; }
-        let csv = '事業所,判定,支払方法,取引先ID,取引先名,主な勘定科目,平均金額,予定日,最終登録日,状況\n';
-        rows.forEach(({ it, ev }) => {
-          csv += [companyName, STATUS_LABEL[ev.status], it.freq, it.id, it.name, it.account, Math.round(it.avg), fmt(ev.next), it.lastDate, statusText(ev)].map(csvCell).join(',') + '\n';
-        });
-        const label = { missing: '漏れの疑い', attention: '要注意', all: '全件' }[f];
-        download(csv, `支払登録漏れ_${label}_${safeName}_${stamp()}.csv`);
+      function exportCsv(type) {
+        const rows = type === 'alert' ? computeRows().filter((r) => r.alert) : currentRows();
         exportDropdownMenu.classList.remove('show');
-      }
-      document.getElementById('exportMissingBtn').addEventListener('click', () => exportResults('missing'));
-      document.getElementById('exportAttentionBtn').addEventListener('click', () => exportResults('attention'));
-      document.getElementById('exportAllResultBtn').addEventListener('click', () => exportResults('all'));
-
-      document.getElementById('exportMasterBtn').addEventListener('click', () => {
-        const items = itemsArray();
-        if (!items.length) { alert('出力するデータがありません。'); return; }
-        let csv = '取引先ID,取引先名,支払方法,分析結果,継続率,手動変更,除外科目,主な勘定科目,平均金額,通常の登録日,登録月（毎年）,最終登録日\n';
-        items.sort((a, b) => a.name.localeCompare(b.name, 'ja')).forEach((it) => {
-          csv += [it.id, it.name, it.freq, it.auto, `${Math.round((it.ratio || 0) * 100)}%`, it.manual ? 'あり' : '', isExcluded(it) ? 'はい' : '', it.account, Math.round(it.avg), it.day, it.month, it.lastDate].map(csvCell).join(',') + '\n';
+        if (!rows.length) { alert(type === 'alert' ? '漏れの疑いがある取引先はありません。' : '出力するデータがありません。'); return; }
+        const today = today0();
+        const cur = new Date(today.getFullYear(), today.getMonth(), 1);
+        const monthCols = []; for (let i = 12; i >= 0; i--) monthCols.push(ymKey(addMonths(cur, -i)));
+        let csv = ['事業所', '頻度', '取引先ID', '取引先名', '主な勘定科目', '状況', '継続率', '継続月数（年数）', '通常の登録時期', '最終登録日', '平均金額', ...monthCols].map(csvCell).join(',') + '\n';
+        rows.forEach(({ it, st }) => {
+          csv += [companyName, it.kind, it.id, it.name, it.account, st ? st.flag.text : '', st ? `${Math.round(st.ratio * 100)}%` : '', st ? st.note : '', timingText(it), it.lastDate, Math.round(it.avg),
+            ...monthCols.map((k) => (it.mon[k] ? it.mon[k][1] : ''))].map(csvCell).join(',') + '\n';
         });
-        download(csv, `支払方法設定_${safeName}_${stamp()}.csv`);
-      });
-
-      // 設定CSVの読み込み（別のPCやブラウザに設定を移すとき）
-      function parseCsv(text) {
-        const rows = []; let row = [], cell = '', q = false;
-        for (let i = 0; i < text.length; i++) {
-          const ch = text[i];
-          if (q) {
-            if (ch === '"') { if (text[i + 1] === '"') { cell += '"'; i++; } else q = false; }
-            else cell += ch;
-          } else if (ch === '"') q = true;
-          else if (ch === ',') { row.push(cell); cell = ''; }
-          else if (ch === '\n') { row.push(cell); rows.push(row); row = []; cell = ''; }
-          else if (ch !== '\r') cell += ch;
-        }
-        if (cell || row.length) { row.push(cell); rows.push(row); }
-        return rows;
+        const safeName = (companyName || companyId).replace(/[\\/:*?"<>|\s]/g, '_');
+        download(csv, `支払登録漏れ_${type === 'alert' ? '漏れの疑い' : '一覧'}_${safeName}_${fmt(today).replace(/-/g, '')}.csv`);
       }
-      document.getElementById('importBtn').addEventListener('click', () => document.getElementById('importFile').click());
-      document.getElementById('importFile').addEventListener('change', async (e) => {
-        const file = e.target.files[0]; e.target.value = '';
-        if (!file) return;
-        const rows = parseCsv((await file.text()).replace(/^\uFEFF/, ''));
-        const head = rows.shift() || [];
-        const iId = head.indexOf('取引先ID'), iF = head.indexOf('支払方法');
-        if (iId < 0 || iF < 0) { alert('「取引先ID」と「支払方法」の列が見つかりません。このアプリで出力した設定CSVを選んでください。'); return; }
-        let applied = 0, skipped = 0;
-        rows.forEach((r) => {
-          const it = store.items[r[iId]]; const f = r[iF];
-          if (it && ['毎月', '毎年', '対象外'].includes(f)) { it.freq = f; it.manual = f !== defaultFreq(it); applied++; } else if (r[iId]) skipped++;
-        });
-        saveStore(); renderMaster(); if (lastResults) renderResults();
-        alert(`${applied}件の支払方法を反映しました。` + (skipped ? `\n（この事業所に見つからない取引先 ${skipped}件はスキップしました）` : ''));
-      });
+      document.getElementById('exportViewBtn').addEventListener('click', () => exportCsv('view'));
+      document.getElementById('exportAlertBtn').addEventListener('click', () => exportCsv('alert'));
 
       document.getElementById('resetBtn').addEventListener('click', () => {
-        if (!confirm('この事業所の分析結果と支払方法の設定を削除します。よろしいですか？')) return;
+        if (!confirm('この事業所の分析結果を削除します。よろしいですか？')) return;
         try { localStorage.removeItem(STORE_KEY); } catch (e) {}
-        store = defaultStore(); lastResults = null;
-        document.getElementById('checkResult').classList.add('hidden');
-        document.getElementById('checkSection').classList.add('hidden');
-        syncGraceInputs(); renderMeta(); renderMaster();
+        store = defaultStore();
         dropdownMenu.classList.remove('show');
+        syncKindUi(); render();
       });
 
       // ---------- 初期表示 ----------
-      ratioInput.value = store.settings.ratioTh;
-      syncGraceInputs();
-      applyDefaults();
-      renderMeta();
-      renderMaster();
+      syncKindUi();
+      render();
     })();
   </script>
 </body>
