@@ -166,7 +166,7 @@
     </header>
 
     <div class="app-header-bar">
-      <a href="../index.html" class="btn-nav">← ポータルへ戻る</a>
+      <a href="../dtax_freee.html" class="btn-nav">← ポータルへ戻る</a>
       <span class="app-tag">使用中：支払登録漏れチェッカー</span>
     </div>
 
@@ -307,7 +307,7 @@
       dropdownMenu.addEventListener('click', (e) => e.stopPropagation());
       exportDropdownMenu.addEventListener('click', (e) => e.stopPropagation());
       document.getElementById('logoutBtn').addEventListener('click', () => {
-        if (confirm('ログアウトしますか？')) { sessionStorage.clear(); window.location.href = '../index.html'; }
+        if (confirm('ログアウトしますか？')) { sessionStorage.clear(); window.location.href = '../portal'; }
       });
 
       // ---------- 認証情報 ----------
@@ -316,7 +316,7 @@
       const companyName = sessionStorage.getItem('company_name') || '';
       if (!token || !companyId) {
         alert('ログイン情報または事業所選択が失われました。ポータルに戻ります。');
-        window.location.href = '../index.html';
+        window.location.href = '../portal';
         return;
       }
       document.getElementById('currentCompanyLabel').textContent = companyName;
