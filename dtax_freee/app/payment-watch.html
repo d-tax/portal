@@ -73,7 +73,7 @@
 
     /* 一覧 */
     .all-table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow-sm); }
-    .all-table th, .all-table td { padding: 12px 14px; text-align: left; font-size: 13px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .all-table th, .all-table td { padding: 12px 12px; text-align: left; font-size: 13px; border-bottom: 1px solid var(--border); vertical-align: middle; }
     .all-table th { background: var(--bg); font-weight: 600; color: var(--text-muted); white-space: nowrap; }
     .all-table td.nowrap { white-space: nowrap; }
     .all-table tr.alert-row td:first-child { box-shadow: inset 3px 0 0 #dc2626; }
@@ -81,14 +81,21 @@
     .table-wrap thead th { position: sticky; top: 0; z-index: 1; }
     .empty-row td { text-align: center; color: var(--text-muted); padding: 30px; }
     .sub { display: block; font-size: 11px; color: var(--text-muted); margin-top: 3px; font-weight: 400; }
-    .freq-chip { font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 4px; margin-right: 6px; }
+    .freq-chip { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 4px; margin-bottom: 4px; }
+    .col-name { min-width: 160px; }
+    .col-name .pname { display: block; color: var(--text-main); font-weight: 700; line-height: 1.45; overflow-wrap: anywhere; }
+    .col-acc { min-width: 96px; line-height: 1.45; }
+    .col-hist { min-width: 300px; }
+    .col-date { white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .col-date .sub { font-variant-numeric: tabular-nums; }
+    .hist-foot span { white-space: nowrap; }
     .freq-chip.m { background: #eff6ff; color: #1e40af; }
     .freq-chip.y { background: #f5f3ff; color: #5b21b6; }
 
     /* 登録履歴：毎月（棒グラフのタイムライン） */
     .tl { display: inline-flex; gap: 3px; align-items: flex-end; }
-    .tl-cell { width: 22px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
-    .tl-track { width: 16px; height: 34px; border-radius: 3px; background: var(--bg); border: 1px solid var(--border); display: flex; align-items: flex-end; overflow: hidden; position: relative; box-sizing: border-box; }
+    .tl-cell { width: 20px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .tl-track { width: 15px; height: 34px; border-radius: 3px; background: var(--bg); border: 1px solid var(--border); display: flex; align-items: flex-end; overflow: hidden; position: relative; box-sizing: border-box; }
     .tl-bar { width: 100%; background: var(--primary); }
     .tl-cell.pre .tl-track { background: transparent; border-style: dotted; opacity: 0.55; }
     .tl-cell.miss .tl-track { background: #fef2f2; border-color: #fca5a5; }
@@ -99,10 +106,10 @@
     .tl-lbl.yr { color: var(--text-main); font-weight: 700; }
 
     /* 登録履歴：毎年（年×月のグリッド） */
-    .yg { display: inline-grid; grid-template-columns: 38px repeat(12, 16px); gap: 3px; align-items: center; }
+    .yg { display: inline-grid; grid-template-columns: 34px repeat(12, 15px); gap: 3px; align-items: center; }
     .yg .h { font-size: 9.5px; color: var(--text-muted); text-align: center; line-height: 1; }
     .yg .y { font-size: 11px; color: var(--text-muted); font-weight: 600; font-variant-numeric: tabular-nums; }
-    .yg .c { width: 16px; height: 16px; border-radius: 3px; background: var(--bg); border: 1px solid var(--border); position: relative; box-sizing: border-box; }
+    .yg .c { width: 15px; height: 15px; border-radius: 3px; background: var(--bg); border: 1px solid var(--border); position: relative; box-sizing: border-box; }
     .yg .c.on { background: var(--primary); border-color: var(--primary); }
     .yg .c.miss { background: #fef2f2; border-color: #fca5a5; }
     .yg .c.wait { border: 1.5px dashed var(--text-muted); background: transparent; }
@@ -166,7 +173,7 @@
     <!-- 支払頻度を分析する -->
     <div class="step-box">
       <div class="step-title" style="margin-bottom: 6px;">支払頻度を分析する</div>
-      <div class="step-desc">分析する支払頻度を選んで実行します。「毎月」は直近13ヶ月、「毎年」は直近37ヶ月の支出取引を使います。連続して支払が発生したことのない取引先は一覧に入りません。</div>
+      <div class="step-desc">分析する支払頻度を選んで実行します。「毎月」は直近13ヶ月、「毎年」は試算表（損益計算書）の取引先別の金額を直近37ヶ月分、月ごとに使います。毎年の分析は取引件数に関係なく37回の取得で終わります。連続して支払が発生したことのない取引先は一覧に入りません。</div>
       <div class="control-row">
         <span class="lbl">支払頻度の分析</span>
         <div class="seg" id="kindSelect" role="group" aria-label="支払頻度の分析">
@@ -182,8 +189,9 @@
         <b>【一覧に入る条件】</b>
         <ul>
           <li><b>毎月:</b> 2ヶ月以上続けて支払があり、最初の支払月から今日までのうち支払があった月の割合（継続率）が基準以上の取引先。今月分は未登録でも数えません</li>
-          <li><b>毎年:</b> 約1年（330〜400日）の間隔で2年続けて支払があり、最初の支払から今日までの毎年の支払時期（前後45日）に支払があった割合が基準以上の取引先。直近12ヶ月に3ヶ月以上支払がある取引先は除外します</li>
+          <li><b>毎年:</b> 約1年（11〜13ヶ月）の間隔で2年続けて支払があり、最初の支払から今日までの毎年の支払時期（前後45日）に支払があった割合が基準以上の取引先。直近12ヶ月に3ヶ月以上支払がある取引先は除外します</li>
         </ul>
+        毎年の分析は損益計算書の勘定科目が対象のため、預り金・借入金など貸借対照表の科目の支払は含まれません。また登録日は月単位で表示します。<br>
         途中から契約した取引先は最初の支払から数えるので不利になりません。途中で解約した取引先は継続率が下がり、一覧から外れます。継続率の基準は「毎月」「毎年」で別々に設定でき、変更は一覧にすぐ反映されます。
       </div>
 
@@ -243,8 +251,7 @@
               <th>取引先</th>
               <th>主な勘定科目</th>
               <th>登録履歴</th>
-              <th>通常の登録時期</th>
-              <th>最終登録日</th>
+              <th>登録時期</th>
             </tr>
           </thead>
           <tbody id="resultBody"></tbody>
@@ -425,6 +432,59 @@
         });
         return (await runPool(tasks, 3, onProgress)).flat();
       }
+      // 試算表（損益計算書）を取引先別・1ヶ月ずつ取得し、取引先×月の金額にまとめる
+      async function fetchAnnualFromTrialPl(start, end, onProgress) {
+        const ranges = [];
+        for (let cur = new Date(start); cur <= end; cur = addMonths(cur, 1)) {
+          const monthEnd = new Date(cur.getFullYear(), cur.getMonth() + 1, 0);
+          ranges.push({ ym: ymKey(cur), s: fmt(cur), e: fmt(monthEnd > end ? end : monthEnd), past: monthEnd < end });
+        }
+        // 最新の完了月で試算表が使えるか先に確認する（使えなければ取引一覧での分析に切り替える）
+        const probe = ranges[ranges.length - 2] || ranges[ranges.length - 1];
+        await getTrialPl(probe);
+        const results = await runPool(ranges.map((r) => async () => {
+          try { return { ym: r.ym, data: await getTrialPl(r) }; }
+          catch (e) { if (/再ログイン|回数制限/.test(e.message)) throw e; return { ym: r.ym, data: null }; } // freee利用開始前の月など
+        }), 3, onProgress);
+
+        const map = {};
+        results.forEach(({ ym, data }) => {
+          const balances = (data && data.trial_pl && data.trial_pl.balances) || [];
+          balances.forEach((b) => {
+            if (!b.account_item_id || !Array.isArray(b.partners)) return; // 合計行は除く
+            b.partners.forEach((pt) => {
+              if (!pt.id) return; // 取引先未選択
+              const amt = (pt.debit_amount || 0) - (pt.credit_amount || 0);
+              if (amt <= 0) return; // 支払（借方）のみ
+              const id = String(pt.id);
+              const p = map[id] || (map[id] = { id, name: pt.name || `取引先ID ${id}`, mon: {}, acc: {}, monthOnly: true });
+              const m = p.mon[ym] || (p.mon[ym] = [1, 0]);
+              m[1] += amt;
+              p.acc[b.account_item_name] = (p.acc[b.account_item_name] || 0) + amt;
+            });
+          });
+        });
+        Object.values(map).forEach((p) => {
+          const keys = Object.keys(p.mon).sort();
+          p.dates = keys.map((k) => `${k}-15`); // 日付は分からないので月の中ほどとして扱う
+          p.lastDate = p.dates[p.dates.length - 1];
+          p.day = 15;
+          const accs = Object.entries(p.acc).sort((a, b) => b[1] - a[1]);
+          p.account = accs.length ? accs[0][0] : '';
+          delete p.acc;
+          p.avg = keys.reduce((a, k) => a + p.mon[k][1], 0) / keys.length;
+        });
+        return map;
+      }
+      const plCache = {};
+      async function getTrialPl(r) {
+        const key = `${r.s}_${r.e}`;
+        if (plCache[key]) return plCache[key];
+        const data = await callApi(`/reports/trial_pl?company_id=${companyId}&start_date=${r.s}&end_date=${r.e}&breakdown_display_type=partner`);
+        if (r.past) plCache[key] = data;
+        return data;
+      }
+
       async function fetchPartnerMap() {
         const partners = await fetchAllPages(`/partners?company_id=${companyId}`, 'partners');
         const m = {}; partners.forEach((p) => { m[p.id] = p.name; }); return m;
@@ -531,9 +591,10 @@
         const lastCounted = anns.filter((a) => a.state !== 'next').pop();
         const alert = !!lastCounted && lastCounted.state === 'miss';
         let flag;
+        const when = (d) => (item.monthOnly ? `${d.getMonth() + 1}月頃` : `${d.getMonth() + 1}月${d.getDate()}日頃`);
         if (alert) flag = { cls: 'miss', text: `${lastCounted.ann.getFullYear()}年分が未登録（${lastCounted.ann.getMonth() + 1}月頃）` };
-        else if (next && next <= today) flag = { cls: 'wait', text: `予定日を過ぎています（${next.getMonth() + 1}月${next.getDate()}日頃・猶予内）` };
-        else if (next && dayDiff(next, today) <= 30) flag = { cls: 'wait', text: `まもなく（${next.getMonth() + 1}月${next.getDate()}日頃）` };
+        else if (next && next <= today) flag = { cls: 'wait', text: `予定時期を過ぎています（${when(next)}・猶予内）` };
+        else if (next && dayDiff(next, today) <= 30) flag = { cls: 'wait', text: `まもなく（${when(next)}）` };
         else flag = { cls: 'ok', text: next ? `次回 ${next.getFullYear()}年${next.getMonth() + 1}月頃` : '登録済み' };
         return { ratio: counted ? hits / counted : 0, note: `${hits}/${counted}年`, anns, alert, flag };
       }
@@ -573,7 +634,7 @@
             const d = new Date(y, m0, 1), k = ymKey(d), mm = it.mon[k];
             let cls = '', tip = `${y}年${m0 + 1}月：`;
             if (d < winStart) { cls = 'out'; tip = ''; }
-            else if (mm) { cls = 'on'; tip += `${mm[0]}件 ${yen(mm[1])}`; }
+            else if (mm) { cls = 'on'; tip += it.monthOnly ? yen(mm[1]) : `${mm[0]}件 ${yen(mm[1])}`; }
             else if (missMonths.has(k)) { cls = 'miss'; tip += '支払予定の時期に支払なし'; }
             else if (waitMonths.has(k)) { cls = 'wait'; tip += '次回の支払予定'; }
             else if (d > today) { cls = 'future'; tip = ''; }
@@ -593,7 +654,14 @@
         if (st && st.ratio + 1e-9 < th) flags.push('<span class="flag ex">継続率が基準未満</span>');
         return `${body}<div class="hist-foot"><span class="meter ${st && st.ratio + 1e-9 < th ? 'low' : ''}"><i style="width:${pct}%"></i></span><span>継続率 ${pct}%（${esc(st ? st.note : '—')}）</span>${flags.join('')}</div>`;
       }
+      // 勘定科目は括弧の前でだけ改行する（例: 仕入高／【営業業者】）
+      const accHtml = (name) => (name ? esc(name).split(/(?=[【（(［\[])/).map((t) => `<span style="white-space:nowrap">${t}</span>`).join('<wbr>') : '—');
+      function lastDateText(it) {
+        const d = parse(it.lastDate);
+        return it.monthOnly ? `${d.getFullYear()}年${d.getMonth() + 1}月` : fmtJp(d);
+      }
       function timingText(it) {
+        if (it.kind === '毎年' && it.monthOnly) return `毎年 ${parse(it.lastDate).getMonth() + 1}月頃`;
         if (it.kind === '毎年') { const d = parse(it.lastDate); return `毎年 ${d.getMonth() + 1}月${d.getDate()}日頃`; }
         return `毎月 ${it.day}日頃`;
       }
@@ -645,16 +713,15 @@
         const rows = currentRows();
         const tbody = document.getElementById('resultBody');
         if (!rows.length) {
-          tbody.innerHTML = `<tr class="empty-row"><td colspan="5">${viewFilter === 'alert' ? '漏れの疑いがある取引先はありません。' : '条件に合う取引先はありません。'}</td></tr>`;
+          tbody.innerHTML = `<tr class="empty-row"><td colspan="4">${viewFilter === 'alert' ? '漏れの疑いがある取引先はありません。' : '条件に合う取引先はありません。'}</td></tr>`;
           return;
         }
         tbody.innerHTML = rows.map(({ it, st, visible, alert }) => `
           <tr class="${alert ? 'alert-row' : ''}" style="${visible ? '' : 'opacity:0.6;'}">
-            <td><span class="freq-chip ${it.kind === '毎月' ? 'm' : 'y'}">${it.kind}</span><b style="color:var(--text-main);">${esc(it.name)}</b></td>
-            <td>${esc(it.account || '—')}</td>
-            <td>${historyHtml(it, st, today)}</td>
-            <td class="nowrap">${esc(timingText(it))}</td>
-            <td class="nowrap">${fmtJp(parse(it.lastDate))}</td>
+            <td class="col-name"><span class="freq-chip ${it.kind === '毎月' ? 'm' : 'y'}">${it.kind}</span><span class="pname">${esc(it.name)}</span></td>
+            <td class="col-acc">${accHtml(it.account)}</td>
+            <td class="col-hist">${historyHtml(it, st, today)}</td>
+            <td class="col-date">${esc(timingText(it))}<span class="sub">最終 ${esc(lastDateText(it))}</span></td>
           </tr>`).join('');
       }
       document.getElementById('viewFilter').addEventListener('click', (e) => {
@@ -691,7 +758,7 @@
         document.getElementById('analyzeMeta').innerHTML = ['毎月', '毎年'].map((k) => {
           const info = store.analyzed[k];
           if (!info) return `${k}: まだ分析していません`;
-          let line = `${k}: ${fmtJp(new Date(info.at))}に分析（直近${info.months}ヶ月）`;
+          let line = `${k}: ${fmtJp(new Date(info.at))}に分析（${info.source || '取引一覧'}・直近${info.months}ヶ月）`;
           if (info.noPartner) line += `／ 取引先未設定の取引 ${info.noPartner}件は集計対象外`;
           if (dayDiff(today0(), new Date(info.at)) > 31) line += ' <b style="color:#b45309;">1ヶ月以上前の分析です。最新の登録状況を見るには再分析してください</b>';
           return line;
@@ -729,17 +796,25 @@
           const today = today0();
           const start = addMonths(new Date(today.getFullYear(), today.getMonth(), 1), -(months - 1));
 
-          text.textContent = '取引先・勘定科目を取得中...';
-          const [partnerMap, accountMap] = await Promise.all([fetchPartnerMap(), fetchAccountMap()]);
-
-          text.textContent = `支出取引を取得中... 0/${months}ヶ月`;
-          const deals = await fetchExpenseDeals(start, today, (d, t) => {
-            text.textContent = `支出取引を取得中... ${d}/${t}ヶ月`;
-            bar.style.width = `${Math.round((d / t) * 100)}%`;
-          });
-
-          text.textContent = `${deals.length.toLocaleString()}件の取引を集計中...`;
-          const { map, noPartner } = aggregate(deals, partnerMap, accountMap);
+          const progress = (label) => (d, t) => { text.textContent = `${label}... ${d}/${t}ヶ月`; bar.style.width = `${Math.round((d / t) * 100)}%`; };
+          let map = null, noPartner = 0, source = '取引一覧';
+          if (kind === '毎年') {
+            try {
+              text.textContent = '試算表を取得中...';
+              map = await fetchAnnualFromTrialPl(start, today, progress('試算表を取得中'));
+              source = '試算表';
+            } catch (e) {
+              if (/再ログイン|回数制限/.test(e.message)) throw e;
+              map = null; // 試算表が使えない場合は取引一覧で分析する
+            }
+          }
+          if (!map) {
+            text.textContent = '取引先・勘定科目を取得中...';
+            const [partnerMap, accountMap] = await Promise.all([fetchPartnerMap(), fetchAccountMap()]);
+            const deals = await fetchExpenseDeals(start, today, progress('支出取引を取得中'));
+            text.textContent = `${deals.length.toLocaleString()}件の取引を集計中...`;
+            ({ map, noPartner } = aggregate(deals, partnerMap, accountMap));
+          }
 
           // この頻度の結果を入れ替える（連続した支払がある取引先だけ保存。基準未満も保存し、基準の変更にすぐ対応）
           Object.keys(store.items).forEach((key) => { if (store.items[key].kind === kind) delete store.items[key]; });
@@ -749,7 +824,7 @@
             if (!statsFor(it, today)) return;
             store.items[`${kind}:${it.id}`] = it;
           });
-          store.analyzed[kind] = { at: new Date().toISOString(), months, noPartner };
+          store.analyzed[kind] = { at: new Date().toISOString(), months, noPartner, source };
           saveStore();
           render();
         } catch (err) {
@@ -778,7 +853,7 @@
         const monthCols = []; for (let i = 12; i >= 0; i--) monthCols.push(ymKey(addMonths(cur, -i)));
         let csv = ['事業所', '頻度', '取引先ID', '取引先名', '主な勘定科目', '状況', '継続率', '継続月数（年数）', '通常の登録時期', '最終登録日', '平均金額', ...monthCols].map(csvCell).join(',') + '\n';
         rows.forEach(({ it, st }) => {
-          csv += [companyName, it.kind, it.id, it.name, it.account, st ? st.flag.text : '', st ? `${Math.round(st.ratio * 100)}%` : '', st ? st.note : '', timingText(it), it.lastDate, Math.round(it.avg),
+          csv += [companyName, it.kind, it.id, it.name, it.account, st ? st.flag.text : '', st ? `${Math.round(st.ratio * 100)}%` : '', st ? st.note : '', timingText(it), it.monthOnly ? it.lastDate.slice(0, 7) : it.lastDate, Math.round(it.avg),
             ...monthCols.map((k) => (it.mon[k] ? it.mon[k][1] : ''))].map(csvCell).join(',') + '\n';
         });
         const safeName = (companyName || companyId).replace(/[\\/:*?"<>|\s]/g, '_');
