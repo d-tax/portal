@@ -2,623 +2,302 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>Soft Drive Map with Aurora Glass UI</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>D-Tax Internal Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Identity Services (Googleログイン用) -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
   <style>
-    * { box-sizing: border-box; }
-
-    /* 背景：Gemini風オーロラアニメーション */
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      color: #1e293b;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      background: linear-gradient(-45deg, #e0f2fe, #f3e8ff, #fce7f3, #e0e7ff);
-      background-size: 400% 400%;
-      animation: aurora 25s ease infinite;
-    }
-
-    @keyframes aurora {
-      0% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
-    }
-
-    /* グラスモーフィズム ヘッダー */
-    header {
-      position: sticky;
-      top: 0;
-      padding: 14px 28px;
-      background: rgba(255, 255, 255, 0.45);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.6);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
-      z-index: 1000;
-      gap: 20px;
-    }
-
-    h1 {
-      font-size: 18px;
-      margin: 0;
-      font-weight: 700;
-      background: linear-gradient(135deg, #4f46e5, #9333ea);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      white-space: nowrap;
-    }
-
-    .search-bar {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      background: rgba(255, 255, 255, 0.6);
-      backdrop-filter: blur(10px);
-      padding: 8px 18px;
-      border-radius: 30px;
-      border: 1px solid rgba(255, 255, 255, 0.8);
-      flex: 1;
-      max-width: 550px;
-      transition: all 0.3s ease;
-    }
-    .search-bar:focus-within {
-      background: rgba(255, 255, 255, 0.85);
-      box-shadow: 0 4px 20px rgba(124, 58, 237, 0.15);
-      border-color: rgba(168, 85, 247, 0.4);
-    }
-    .search-bar input {
-      border: none;
-      background: transparent;
-      outline: none;
-      font-size: 13.5px;
-      color: #1e293b;
-      width: 100%;
-    }
-
-    .btn {
-      padding: 8px 20px;
-      background: linear-gradient(135deg, #6366f1, #a855f7);
-      color: white;
-      border: none;
-      border-radius: 30px;
-      cursor: pointer;
-      font-size: 13px;
-      font-weight: 600;
-      box-shadow: 0 4px 12px rgba(124, 58, 237, 0.25);
-      transition: all 0.3s ease;
-      white-space: nowrap;
-    }
-    .btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 18px rgba(124, 58, 237, 0.35);
-    }
-
-    #main-wrapper {
-      display: flex;
-      flex: 1;
-      overflow: hidden;
-      position: relative;
-    }
-
-    #workspace {
-      position: relative;
-      flex: 1;
-      display: flex;
-      overflow: auto;
-    }
-
-    #connector-svg {
-      position: absolute;
+    /* カスタムカーソル（◎の形） */
+    .cursor-dot {
+      position: fixed;
       top: 0;
       left: 0;
-      width: 100%;
-      height: 100%;
+      width: 24px;
+      height: 24px;
+      border: 2px solid #333;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 9999;
+      transform: translate(-50%, -50%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .cursor-dot::after {
+      content: "";
+      width: 6px;
+      height: 6px;
+      background-color: #333;
+      border-radius: 50%;
+    }
+
+    /* カーソルに遅れて追従する虹色のブラー */
+    .cursor-glow {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 150px;
+      height: 150px;
+      background: radial-gradient(circle, rgba(255, 105, 180, 0.5), rgba(135, 206, 250, 0.5), transparent 70%);
+      border-radius: 50%;
+      filter: blur(35px);
       pointer-events: none;
       z-index: 1;
+      transform: translate(-50%, -50%);
+      opacity: 0;
+      transition: left 0.5s ease-out, top 0.5s ease-out, width 0.3s, height 0.3s, opacity 0.3s;
     }
 
-    #tournament-container {
-      position: relative;
+    /* クリック時に広がる波紋エフェクト */
+    .ripple-wave {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 150px;
+      height: 150px;
+      background: radial-gradient(
+        circle,
+        rgba(255, 182, 193, 0.65) 0%,
+        rgba(251, 194, 235, 0.6) 25%,
+        rgba(161, 140, 209, 0.55) 50%,
+        rgba(143, 211, 244, 0.55) 70%,
+        transparent 85%
+      );
+      border-radius: 50%;
+      filter: blur(25px);
+      pointer-events: none;
       z-index: 2;
-      display: flex;
-      padding: 40px;
-      gap: 70px;
-      min-height: 100%;
-      align-items: flex-start;
+      transform: translate(-50%, -50%);
+      animation: waveAnimation 0.8s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
     }
 
-    .round-column {
-      display: flex;
-      flex-direction: column;
-      min-width: 210px;
-      gap: 14px;
-      position: relative;
-      align-self: flex-start;
-      transition: margin-top 0.2s ease;
+    @keyframes waveAnimation {
+      0% { width: 50px; height: 50px; opacity: 0.95; }
+      100% { width: 350px; height: 350px; opacity: 0; }
     }
 
-    /* すりガラス風カード UI */
-    .node-card {
-      background: rgba(255, 255, 255, 0.55);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      padding: 12px 18px;
-      border-radius: 16px;
-      border: 1px solid rgba(255, 255, 255, 0.8);
-      box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05);
-      cursor: pointer;
-      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-      position: relative;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      user-select: none;
-    }
-    .node-card:hover {
-      transform: translateY(-2px) scale(1.02);
-      background: rgba(255, 255, 255, 0.75);
-      border-color: rgba(255, 255, 255, 1);
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
-    }
-    .node-card.selected {
-      background: rgba(255, 255, 255, 0.9);
-      border: 1.5px solid #6366f1;
-      color: #0f172a;
-      font-weight: 700;
-      box-shadow: 0 8px 25px rgba(99, 102, 241, 0.25);
-    }
-
-    /* アイコン画像のスタイル調整 */
-    .node-icon {
-      width: 20px;
-      height: 20px;
-      object-fit: contain;
-      flex-shrink: 0;
-      display: block;
-    }
-
-    .title {
-      font-size: 13px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 150px;
-    }
-
-    /* 分岐線 */
-    .line-default {
-      fill: none;
-      stroke: rgba(148, 163, 184, 0.4);
-      stroke-width: 2;
-      stroke-linejoin: round;
-      stroke-linecap: round;
-      transition: stroke 0.2s ease;
-    }
-    .line-active {
-      stroke: #6366f1 !important;
-      stroke-width: 2.5 !important;
-    }
-
-    /* 右側のファイルプレビュー */
-    .preview-column {
-      width: 520px;
-      height: 620px;
-      background: rgba(255, 255, 255, 0.7);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border-radius: 20px;
-      border: 1px solid rgba(255, 255, 255, 0.9);
-      box-shadow: 0 20px 40px rgba(0,0,0,0.08);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      flex-shrink: 0;
-    }
-    .preview-header {
-      padding: 12px 20px;
-      background: rgba(255, 255, 255, 0.5);
-      border-bottom: 1px solid rgba(226, 232, 240, 0.6);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .preview-header h3 {
-      margin: 0;
-      font-size: 13.5px;
-      color: #1e293b;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .preview-body {
-      flex: 1;
-      background: rgba(241, 245, 249, 0.5);
-    }
-    .preview-body iframe {
-      width: 100%;
-      height: 100%;
-      border: none;
-    }
+    body { cursor: none; }
+    a, button, input { cursor: none; }
   </style>
 </head>
-<body>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col selection:bg-pink-200 relative">
 
-  <header>
-    <h1>✨ Soft Drive Map</h1>
+  <!-- カスタムカーソル要素 -->
+  <div class="cursor-dot" id="cursorDot"></div>
+  <div class="cursor-glow" id="cursorGlow"></div>
 
-    <div class="search-bar">
-      <span>🔍</span>
-      <input type="text" id="search-input" placeholder="選択中フォルダ内を爆速検索..." onkeydown="if(event.key==='Enter') executeFastSearch()" />
-      <button class="btn" style="padding: 5px 14px; font-size: 12px;" onclick="executeFastSearch()">検索</button>
+  <!-- ヘッダー -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-40 px-6 py-3 flex items-center justify-between shadow-sm relative">
+    <div class="flex items-center space-x-3">
+      <img src="image/dtaxlogo.png" alt="D-Tax Logo" class="h-9 w-auto object-contain">
+      <span class="text-sm font-semibold tracking-tight text-slate-500 border-l pl-3 border-slate-300">Internal Portal</span>
     </div>
 
-    <div>
-      <span id="status" style="margin-left: 10px; font-size: 12px; color: #64748b; font-weight: 500;">インデックス読み込み中...</span>
+    <div class="flex items-center space-x-4">
+      <div id="auth-section">
+        <span class="text-xs text-slate-400">未ログイン</span>
+      </div>
     </div>
   </header>
 
-  <div id="main-wrapper">
-    <div id="workspace">
-      <svg id="connector-svg"></svg>
-      <div id="tournament-container">
-
-
-
-
-        
-        
-
-
-        
-<!-- 第0ラウンド（ドライブ選択） -->
-        <div class="round-column" id="round-0">
-          <div class="node-card" onclick="selectDrive('0AFuy2E2OGEvyUk9PVA', '本部管理', this)">
-            <img class="node-icon" src="image/folder.png" alt="folder">
-            <span class="title">本部管理</span>
-          </div>
-          <div class="node-card" onclick="selectDrive('0ALkBF3CxaFy_Uk9PVA', '法人クライアント', this)">
-            <img class="node-icon" src="image/folder.png" alt="folder">
-            <span class="title">法人クライアント</span>
-          </div>
-          <div class="node-card" onclick="selectDrive('0ACErmC2osz2KUk9PVA', '個人クライアント', this)">
-            <img class="node-icon" src="image/folder.png" alt="folder">
-            <span class="title">個人クライアント</span>
-          </div>
+  <!-- メインコンテンツ -->
+  <main class="flex-1 max-w-4xl w-full mx-auto px-4 py-12 flex flex-col justify-center items-center relative z-10">
+    
+    <!-- 1. ログイン前画面 -->
+    <div id="loginView" class="text-center py-12 w-full flex flex-col items-center">
+      <div class="bg-white border border-slate-200 p-10 rounded-3xl shadow-lg max-w-md w-full text-center space-y-6">
+        <div>
+          <h2 class="text-2xl font-bold tracking-tight text-slate-900 mb-2">D-Tax 社内ポータル</h2>
+          <p class="text-xs text-slate-500">社内専用アプリにアクセスするため、<br><span class="font-semibold text-indigo-600">@daiichitax.com</span> のGoogleアカウントでログインしてください。</p>
         </div>
+        
+        <!-- Google Sign-In ボタン配置用コンテナ -->
+        <div id="googleSignInButton" class="flex justify-center"></div>
 
+        <!-- エラーメッセージ表示エリア -->
+        <div id="loginErrorMsg" class="hidden p-3 bg-rose-50 border border-rose-200 rounded-2xl text-xs text-rose-600">
+          @daiichitax.com のアカウントでのみログイン可能です。
+        </div>
       </div>
     </div>
-  </div>
 
-<!-- 554521661384-kpp41s620jutab56eu2qi0b7bcbrfgl6.apps.googleusercontent.com -->
-<!-- gemini api : AQ.Ab8RN6JZMu5ZQa5PxTDq-cE3l64OZhx2-lptnkCD_4uxXvfYLw -->
+    <!-- 2. ログイン後：社内アプリ一覧（カード選択画面） -->
+    <div id="portalView" class="hidden w-full space-y-6">
+      <div class="flex items-center justify-between px-2">
+        <div>
+          <h2 class="text-xl font-bold text-slate-900">社内アプリケーション一覧</h2>
+          <p class="text-xs text-slate-500 mt-0.5">利用したいツールを選択してください。</p>
+        </div>
+        <div id="userInfoDisplay" class="text-xs font-medium text-slate-600 bg-white border border-slate-200 px-4 py-2 rounded-2xl shadow-xs">
+          <!-- ログインユーザーメール表示 -->
+        </div>
+      </div>
 
-
+      <!-- アプリカード・グリッド -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        
         
 
+        <!-- アプリカード: freee連携ポータル -->
+        <a href="https://d-tax.github.io/dtax_freee/" target="_blank" class="bg-white hover:bg-indigo-50/40 border border-slate-200 hover:border-indigo-300 p-6 rounded-3xl shadow-sm transition group flex flex-col justify-between">
+          <div>
+            <div class="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-xl mb-4 group-hover:scale-110 transition">
+              <img src="image/logo-freee.png" alt="アプリアイコン" class="w-full h-full object-contain">
+            </div>
+            <h3 class="font-bold text-slate-900 text-base group-hover:text-emerald-600 transition">D-tax freeeポータル</h3>
+            <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">freee関連のデータ管理や各種自動化処理を行うための社内専用連携ポータルです。</p>
+          </div>
+          <div class="mt-6 flex items-center justify-between text-xs font-semibold text-emerald-600 pt-3 border-t border-slate-100">
+            <span>ポータルを開く</span>
+            <span class="group-hover:translate-x-1 transition">→</span>
+          </div>
+        </a>
 
+        <!-- アプリカード1: ドライブ検索アシスタント -->
+        <a href="drive_search/drive_search.html" class="bg-white hover:bg-indigo-50/40 border border-slate-200 hover:border-indigo-300 p-6 rounded-3xl shadow-sm transition group flex flex-col justify-between">
+          <div>
+            <div class="w-10 h-10 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-xl mb-4 group-hover:scale-110 transition">
+              📂
+            </div>
+            <h3 class="font-bold text-slate-900 text-base group-hover:text-indigo-600 transition">AIドライブ検索アシスタント</h3>
+            <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">Googleドライブ内の顧客フォルダや関連ファイルをAIと一緒にスムーズに探し出すツールです。</p>
+          </div>
+          <div class="mt-6 flex items-center justify-between text-xs font-semibold text-indigo-600 pt-3 border-t border-slate-100">
+            <span>アプリを開く</span>
+            <span class="group-hover:translate-x-1 transition">→</span>
+          </div>
+        </a>
+
+        <!-- 新規アプリカード -->
+        <a href="drive_search.html" class="bg-white hover:bg-indigo-50/40 border border-slate-200 hover:border-indigo-300 p-6 rounded-3xl shadow-sm transition group flex flex-col justify-between">
+          <div>
+            <!-- ここを絵文字から <img> タグに変更 -->
+            <div class="w-10 h-10 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center mb-4 group-hover:scale-110 transition overflow-hidden p-2">
+              <img src="image/your-icon.png" alt="アプリアイコン" class="w-full h-full object-contain">
+            </div>
+        
+            <h3 class="font-bold text-slate-900 text-base group-hover:text-indigo-600 transition">AIドライブ検索アシスタント</h3>
+            <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">Googleドライブ内の顧客フォルダや関連ファイルをAIと一緒にスムーズに探し出すツールです。</p>
+          </div>
+          <div class="mt-6 flex items-center justify-between text-xs font-semibold text-indigo-600 pt-3 border-t border-slate-100">
+            <span>アプリを開く</span>
+            <span class="group-hover:translate-x-1 transition">→</span>
+          </div>
+        </a>
+
+      <!-- ログアウトボタン -->
+      <div class="pt-6 text-center">
+        <button onclick="handleLogout()" class="text-xs text-rose-600 hover:underline font-medium transition">
+          ログアウトする
+        </button>
+      </div>
+    </div>
+
+  </main>
 
   <script>
-    const GEMINI_API_KEY = 'AQ.Ab8RN6JZMu5ZQa5PxTDq-cE3l64OZhx2-lptnkCD_4uxXvfYLw';
-    let driveDatabase = [];
-    let selectedPath = [];
+    // --- 設定項目 ---
+    const CLIENT_ID = '554521661384-kpp41s620jutab56eu2qi0b7bcbrfgl6.apps.googleusercontent.com';
+    const ALLOWED_DOMAIN = '@daiichitax.com';
 
-    // GASで生成した JSON を読み込み
-    window.addEventListener('DOMContentLoaded', async () => {
-      const statusEl = document.getElementById('status');
-      try {
-        const res = await fetch('drive_index.json');
-        if (!res.ok) {
-          throw new Error(`HTTP Error Status: ${res.status}`);
-        }
-        driveDatabase = await res.json();
-        statusEl.innerText = `準備完了 (${driveDatabase.length}件のDB)`;
-      } catch (e) {
-        console.error(e);
-        statusEl.innerText = `読み込み失敗 (drive_index.json を確認してください)`;
-      }
+    // --- 演出関連（カスタムカーソル等） ---
+    const cursorDot = document.getElementById('cursorDot');
+    const cursorGlow = document.getElementById('cursorGlow');
+    let mouseX = 0, mouseY = 0, glowX = 0, glowY = 0;
+
+    window.addEventListener('mousemove', (e) => {
+      mouseX = e.clientX; mouseY = e.clientY;
+      cursorDot.style.opacity = '1'; cursorGlow.style.opacity = '1';
+      cursorDot.style.left = `${mouseX}px`; cursorDot.style.top = `${mouseY}px`;
     });
 
-    function selectDrive(driveId, driveName, element) {
-      handleFolderClick(driveId, driveName, element, 0);
+    function animateGlow() {
+      glowX += (mouseX - glowX) * 0.15; glowY += (mouseY - glowY) * 0.15;
+      cursorGlow.style.left = `${glowX}px`; cursorGlow.style.top = `${glowY}px`;
+      requestAnimationFrame(animateGlow);
+    }
+    animateGlow();
+
+    window.addEventListener('mousedown', (e) => {
+      const ripple = document.createElement('div');
+      ripple.className = 'ripple-wave';
+      ripple.style.left = `${e.clientX}px`; ripple.style.top = `${e.clientY}px`;
+      document.body.appendChild(ripple);
+      setTimeout(() => ripple.remove(), 800);
+    });
+
+    // --- Google ログイン初期化 ---
+    window.onload = function () {
+      google.accounts.id.initialize({
+        client_id: CLIENT_ID,
+        callback: handleCredentialResponse
+      });
+
+      // Google標準ログインボタンの描画
+      google.accounts.id.renderButton(
+        document.getElementById('googleSignInButton'),
+        { theme: 'outline', size: 'large', width: 280, text: 'signin_with', shape: 'pill' }
+      );
+    };
+
+    // --- JWT（IDトークン）のデコード用ヘルパー ---
+    function parseJwt(token) {
+      try {
+        var base64Url = token.split('.')[1];
+        var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        var jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+            return '%' + ('0' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        return JSON.parse(jsonPayload);
+      } catch (e) {
+        return null;
+      }
     }
 
-    function handleFolderClick(folderId, folderName, element, roundIndex) {
-      const isCurrentlySelected = element.classList.contains('selected');
-      const isLastInPath = (roundIndex === selectedPath.length - 1);
-
-      if (isCurrentlySelected && isLastInPath) {
-        const driveUrl = folderId.startsWith('YOUR_')
-          ? 'https://drive.google.com/drive/'
-          : `https://drive.google.com/drive/folders/${folderId}`;
-        window.open(driveUrl, '_blank');
+    // --- ログイン応答処理 ＆ ドメイン判定 ---
+    function handleCredentialResponse(response) {
+      const responsePayload = parseJwt(response.credential);
+      
+      if (!responsePayload || !responsePayload.email) {
+        showLoginError();
         return;
       }
 
-      selectedPath = selectedPath.slice(0, roundIndex);
-      selectedPath.push({ id: folderId, name: folderName, element: element, isFolder: true });
+      const userEmail = responsePayload.email;
 
-      highlightSelection(element);
-      updateSearchPlaceholder();
-      loadChildNodesFromDB(folderId, roundIndex + 1);
-    }
+      // @daiichitax.com のドメインチェック
+      if (userEmail.endsWith(ALLOWED_DOMAIN)) {
+        // ログイン成功
+        document.getElementById('loginErrorMsg').classList.add('hidden');
+        document.getElementById('loginView').classList.add('hidden');
+        document.getElementById('portalView').classList.remove('hidden');
 
-    function handleFileClick(file, element, roundIndex) {
-      selectedPath = selectedPath.slice(0, roundIndex);
-      selectedPath.push({ id: file.id, name: file.name, element: element, isFolder: false });
-
-      highlightSelection(element);
-      clearRoundsFrom(roundIndex + 1);
-      renderPreviewColumn(file, roundIndex + 1);
-      drawConnectors();
-    }
-
-    function loadChildNodesFromDB(parentId, roundIndex) {
-      clearRoundsFrom(roundIndex);
-      const items = driveDatabase.filter(item => item.parentFolder === parentId);
-      renderNextRound(items, roundIndex);
-      setTimeout(drawConnectors, 30);
-    }
-
-    function renderNextRound(items, roundIndex) {
-      const container = document.getElementById('tournament-container');
-      const column = document.createElement('div');
-      column.className = 'round-column';
-      column.id = `round-${roundIndex}`;
-
-      if (items.length === 0) {
-        column.innerHTML = '<div style="font-size:12px; color:#94a3b8; padding:10px;">(空のフォルダです)</div>';
-      } else {
-        items.forEach(item => {
-          const isFolder = item.mimeType === 'application/vnd.google-apps.folder';
-          const iconPath = isFolder ? 'image/folder.png' : 'image/file.png';
-
-          const card = document.createElement('div');
-          card.className = 'node-card';
-          
-          card.innerHTML = `
-            <img class="node-icon" src="${iconPath}" alt="${isFolder ? 'folder' : 'file'}">
-            <span class="title" title="${item.name}">${item.name}</span>
-          `;
-
-          card.addEventListener('click', () => {
-            if (isFolder) {
-              handleFolderClick(item.id, item.name, card, roundIndex);
-            } else {
-              handleFileClick(item, card, roundIndex);
-            }
-          });
-
-          column.appendChild(card);
-        });
-      }
-
-      container.appendChild(column);
-      adjustColumnPosition(roundIndex);
-    }
-
-    function renderPreviewColumn(file, roundIndex) {
-      const container = document.getElementById('tournament-container');
-      const column = document.createElement('div');
-      column.className = 'round-column';
-      column.id = `round-${roundIndex}`;
-
-      column.innerHTML = `
-        <div class="preview-column">
-          <div class="preview-header">
-            <h3>📄 ${file.name}</h3>
-          </div>
-          <div class="preview-body">
-            <iframe src="https://drive.google.com/file/d/${file.id}/preview"></iframe>
-          </div>
-        </div>
-      `;
-
-      container.appendChild(column);
-      adjustColumnPosition(roundIndex);
-    }
-
-    async function executeFastSearch() {
-      const keyword = document.getElementById('search-input').value.trim();
-      const currentFolder = getCurrentSelectedFolder();
-
-      if (!keyword) return;
-
-      document.getElementById('status').innerText = '検索中...';
-
-      const targetFolderId = currentFolder ? currentFolder.id : null;
-      let scopeFiles = driveDatabase;
-      
-      if (targetFolderId) {
-        scopeFiles = driveDatabase.filter(item => 
-          item.parentFolder === targetFolderId || (item.path && item.path.includes(currentFolder.name))
-        );
-      }
-
-      let matched = scopeFiles.filter(item => item.name.toLowerCase().includes(keyword.toLowerCase()));
-
-      if (GEMINI_API_KEY && GEMINI_API_KEY !== 'YOUR_GEMINI_API_KEY_HERE' && matched.length > 0) {
-        matched = await refineWithGemini(keyword, matched);
-      }
-
-      renderSearchResults(matched, keyword);
-      document.getElementById('status').innerText = `完了 (${matched.length}件)`;
-    }
-
-    async function refineWithGemini(query, items) {
-      const summaries = items.map(f => `- ID: ${f.id}, 名前: ${f.name}`).join('\n');
-      const prompt = `以下のリストの中から「${query}」に最も適合するファイルのIDだけをカンマ区切りで返してください。\n${summaries}`;
-
-      try {
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-        });
-        const data = await res.json();
-        const reply = data.candidates[0].content.parts[0].text.trim();
-        const ids = reply.split(',').map(s => s.trim());
-        return items.filter(f => ids.includes(f.id));
-      } catch (e) {
-        return items;
-      }
-    }
-
-    function renderSearchResults(items, keyword) {
-      const container = document.getElementById('tournament-container');
-      const existingSearchCol = document.getElementById('round-search');
-      if (existingSearchCol) existingSearchCol.remove();
-
-      const column = document.createElement('div');
-      column.className = 'round-column';
-      column.id = 'round-search';
-
-      const header = document.createElement('div');
-      header.style.fontSize = '12px';
-      header.style.fontWeight = '700';
-      header.style.color = '#6366f1';
-      header.innerText = `🔍 検索結果: 「${keyword}」 (${items.length}件)`;
-      column.appendChild(header);
-
-      items.forEach(item => {
-        const card = document.createElement('div');
-        card.className = 'node-card';
-
-        const isFolder = item.mimeType?.includes('folder');
-        const iconPath = isFolder ? 'image/folder.png' : 'image/file.png';
-
-        card.innerHTML = `
-          <img class="node-icon" src="${iconPath}" alt="${isFolder ? 'folder' : 'file'}">
-          <span class="title" title="${item.name}">${item.name}</span>
+        document.getElementById('auth-section').innerHTML = `
+          <span class="text-xs font-medium text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-200">● ログイン中 (${userEmail})</span>
         `;
-
-        card.addEventListener('click', () => {
-          highlightSelection(card);
-          clearRoundsFrom(1);
-          renderPreviewColumn(item, 1);
-          drawConnectors();
-        });
-        column.appendChild(card);
-      });
-
-      container.appendChild(column);
-      column.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
-
-    function adjustColumnPosition(roundIndex) {
-      const parentObj = selectedPath[roundIndex - 1];
-      const childCol = document.getElementById(`round-${roundIndex}`);
-      if (!parentObj || !childCol) return;
-
-      const parentCard = parentObj.element;
-      const parentCenterY = parentCard.offsetTop + (parentCard.offsetHeight / 2);
-      const childColHeight = childCol.offsetHeight;
-
-      const targetMarginTop = Math.max(0, parentCenterY - (childColHeight / 2));
-      childCol.style.marginTop = `${targetMarginTop}px`;
-    }
-
-    function drawConnectors() {
-      const svg = document.getElementById('connector-svg');
-      const container = document.getElementById('tournament-container');
-      svg.innerHTML = '';
-
-      const containerRect = container.getBoundingClientRect();
-      svg.setAttribute('width', container.scrollWidth + 100);
-      svg.setAttribute('height', container.scrollHeight + 100);
-
-      for (let i = 0; i < selectedPath.length; i++) {
-        const parentObj = selectedPath[i];
-        const nextRoundCol = document.getElementById(`round-${i + 1}`);
-        if (!parentObj || !nextRoundCol) continue;
-
-        adjustColumnPosition(i + 1);
-
-        const pRect = parentObj.element.getBoundingClientRect();
-        const startX = pRect.right - containerRect.left;
-        const startY = pRect.top + pRect.height / 2 - containerRect.top;
-
-        const childCards = Array.from(nextRoundCol.querySelectorAll('.node-card, .preview-column'));
-        if (childCards.length === 0) continue;
-
-        const childYs = childCards.map(c => {
-          const cr = c.getBoundingClientRect();
-          return cr.top + cr.height / 2 - containerRect.top;
-        });
-
-        const minChildY = Math.min(...childYs, startY);
-        const maxChildY = Math.max(...childYs, startY);
-
-        const firstChildRect = childCards[0].getBoundingClientRect();
-        const firstChildX = firstChildRect.left - containerRect.left;
-        const midX = startX + (firstChildX - startX) / 2;
-
-        const isNextSelected = selectedPath[i + 1];
-
-        createSvgLine(svg, startX, startY, midX, startY, `line-default ${isNextSelected ? 'line-active' : ''}`);
-        createSvgLine(svg, midX, minChildY, midX, maxChildY, 'line-default');
-
-        childCards.forEach(child => {
-          const cRect = child.getBoundingClientRect();
-          const childX = cRect.left - containerRect.left;
-          const childY = cRect.top + cRect.height / 2 - containerRect.top;
-
-          const isThisChildSelected = (selectedPath[i + 1] && selectedPath[i + 1].element === child);
-          createSvgLine(svg, midX, childY, childX, childY, `line-default ${isThisChildSelected ? 'line-active' : ''}`);
-
-          if (isThisChildSelected) {
-            createSvgLine(svg, midX, startY, midX, childY, 'line-default line-active');
-          }
-        });
+        document.getElementById('userInfoDisplay').innerText = `ログインアカウント: ${userEmail}`;
+      } else {
+        // ドメイン不一致エラー
+        showLoginError();
       }
     }
 
-    function createSvgLine(svg, x1, y1, x2, y2, className) {
-      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-      line.setAttribute('x1', x1); line.setAttribute('y1', y1);
-      line.setAttribute('x2', x2); line.setAttribute('y2', y2);
-      line.setAttribute('class', className);
-      svg.appendChild(line);
+    function showLoginError() {
+      const errEl = document.getElementById('loginErrorMsg');
+      errEl.classList.remove('hidden');
+      // Googleアカウントセッションをクリアするために必要に応じ再初期化など
     }
 
-    function updateSearchPlaceholder() {
-      const searchInput = document.getElementById('search-input');
-      const currentFolder = getCurrentSelectedFolder();
-      searchInput.placeholder = currentFolder ? `「${currentFolder.name}」のフォルダ内を爆速検索...` : "Google Drive 全体を爆速検索...";
+    function handleLogout() {
+      google.accounts.id.disableAutoSelect();
+      document.getElementById('portalView').classList.add('hidden');
+      document.getElementById('loginView').classList.remove('hidden');
+      document.getElementById('auth-section').innerHTML = '<span class="text-xs text-slate-400">未ログイン</span>';
+      document.getElementById('loginErrorMsg').classList.add('hidden');
     }
-
-    function getCurrentSelectedFolder() {
-      for (let i = selectedPath.length - 1; i >= 0; i--) {
-        if (selectedPath[i].isFolder) return selectedPath[i];
-      }
-      return null;
-    }
-
-    function highlightSelection(element) {
-      const parentColumn = element.parentElement;
-      Array.from(parentColumn.children).forEach(child => child.classList.remove('selected'));
-      element.classList.add('selected');
-    }
-
-    function clearRoundsFrom(roundIndex) {
-      const container = document.getElementById('tournament-container');
-      let i = roundIndex;
-      while (document.getElementById(`round-${i}`)) {
-        container.removeChild(document.getElementById(`round-${i}`));
-        i++;
-      }
-      const searchCol = document.getElementById('round-search');
-      if (searchCol) searchCol.remove();
-      drawConnectors();
-    }
-
-    window.addEventListener('resize', drawConnectors);
   </script>
 </body>
 </html>
