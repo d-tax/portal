@@ -145,9 +145,63 @@
         const limit = 100;
 
         while (true) {
-          const res = await fetch(`${CONFIG.apiBase}/partners?company_id=${companyId}&limit=${limit}&offset=${offset}`, {             headers: { 'Authorization': `Bearer ${token}` }
+          const res = await fetch(`${CONFIG.apiBase}/partners?company_id=${companyId}&limit=${limit}&offset=${offset}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
           });
-          if (!res.ok) throw new Error(`APIエラー: ${res.status}`);           const data = await res.json();           const list = data.partners \vert{}\vert{} [];           partners = partners.concat(list);           if (list.length < limit) break;           offset += limit;         }          return partners;       }        // 抽出処理（番号登録済みを除外し、未登録・「該当する」未指定のみ表示）       fetchPartnersBtn.addEventListener('click', async () => {         clearError();         loadingSection.classList.remove('hidden');         resultSection.classList.add('hidden');          try {           const allPartners = await fetchAllPartners();                      // 抽出条件:           // 1. payer_walletable_id (登録番号) が空または未設定であること (すでに登録済みのものは除外)           // 2. qualified_invoice_issuer (適格請求書発行事業者フラグ) が true (該当する) になっていないこと           unregisteredPartners = allPartners.filter(p => {             const hasNumber = p.payer_walletable_id && p.payer_walletable_id.trim() !== '';             const isQualified = p.qualified_invoice_issuer === true;                          // 番号が無く、かつフラグも未設定（falseまたはnull）の取引先を抽出             return !hasNumber && !isQualified;           });            renderTable();           unregisteredCount.textContent = unregisteredPartners.length;           loadingSection.classList.add('hidden');           resultSection.classList.remove('hidden');         } catch (err) {           showError(err.message);           loadingSection.classList.add('hidden');         }       });        // テーブル描画       function renderTable() {         partnerTableBody.innerHTML = '';         if (unregisteredPartners.length === 0) {           partnerTableBody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 16px;">対象となる未設定の取引先は見つかりませんでした。</td></tr>';           return;         }          unregisteredPartners.forEach((p, index) => {           const tr = document.createElement('tr');           tr.style.borderBottom = '1px solid #e2e8f0';            const dummyCandidateNum = `T${Math.floor(1000000000000 + Math.random() * 9000000000000)}`;
+          if (!res.ok) throw new Error(`APIエラー: ${res.status}`);
+          const data = await res.json();
+          const list = data.partners || [];
+          partners = partners.concat(list);
+          if (list.length < limit) break;
+          offset += limit;
+        }
+
+        return partners;
+      }
+
+      // 抽出処理（番号登録済みを除外し、未登録・「該当する」未指定のみ表示）
+      fetchPartnersBtn.addEventListener('click', async () => {
+        clearError();
+        loadingSection.classList.remove('hidden');
+        resultSection.classList.add('hidden');
+
+        try {
+          const allPartners = await fetchAllPartners();
+          
+          // 抽出条件:
+          // 1. payer_walletable_id (登録番号) が空または未設定であること (すでに登録済みのものは除外)
+          // 2. qualified_invoice_issuer (適格請求書発行事業者フラグ) が true (該当する) になっていないこと
+          unregisteredPartners = allPartners.filter(p => {
+            const hasNumber = p.payer_walletable_id && p.payer_walletable_id.trim() !== '';
+            const isQualified = p.qualified_invoice_issuer === true;
+            
+            // 番号が無く、かつフラグも未設定（falseまたはnull）の取引先を抽出
+            return !hasNumber && !isQualified;
+          });
+
+          renderTable();
+          unregisteredCount.textContent = unregisteredPartners.length;
+          loadingSection.classList.add('hidden');
+          resultSection.classList.remove('hidden');
+        } catch (err) {
+          showError(err.message);
+          loadingSection.classList.add('hidden');
+        }
+      });
+
+      // テーブル描画
+      function renderTable() {
+        partnerTableBody.innerHTML = '';
+        if (unregisteredPartners.length === 0) {
+          partnerTableBody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 16px;">対象となる未設定の取引先は見つかりませんでした。</td></tr>';
+          return;
+        }
+
+        unregisteredPartners.forEach((p, index) => {
+          const tr = document.createElement('tr');
+          tr.style.borderBottom = '1px solid #e2e8f0';
+
+          const dummyCandidateNum = `T${Math.floor(1000000000000 + Math.random() * 9000000000000)}`;
 
           tr.innerHTML = `
             <td style="padding: 8px;">${p.code || '-'}</td>
@@ -156,4 +210,108 @@
               <span class="candidate-badge" onclick="applyCandidate(${index}, '${dummyCandidateNum}')">
                 🔍 候補: ${dummyCandidateNum}
               </span>
-              <a href="https://www.invoice-kohyo.nta.go.jp/" target="_blank" style="font-size: 1
+              <a href="https://www.invoice-kohyo.nta.go.jp/" target="_blank" style="font-size: 11px; color: #2563eb; text-decoration: underline;">国税庁Webで確認</a>
+            </td>
+            <td style="padding: 8px;">
+              <input type="text" id="input_num_${index}" class="input-number" placeholder="T1234567890123" value="${p.temp_number || ''}" onchange="updateTempNum(${index}, this.value)">
+            </td>
+          `;
+          partnerTableBody.appendChild(tr);
+        });
+      }
+
+      window.applyCandidate = function (index, number) {
+        unregisteredPartners[index].temp_number = number;
+        document.getElementById(`input_num_${index}`).value = number;
+      };
+
+      window.updateTempNum = function (index, val) {
+        unregisteredPartners[index].temp_number = val.trim();
+      };
+
+      // CSV出力機能（結果下部のボタン）
+      exportMenuBtn.addEventListener('click', () => {
+        if (unregisteredPartners.length === 0) {
+          alert('出力対象のデータがありません。');
+          return;
+        }
+
+        const csvRows = [
+          ['取引先ID', '取引先コード', '取引先名', '適格請求書発行事業者番号']
+        ];
+
+        unregisteredPartners.forEach((p, idx) => {
+          const numInput = document.getElementById(`input_num_${idx}`)?.value || p.temp_number || '';
+          csvRows.push([
+            p.id,
+            `"${p.code || ''}"`,
+            `"${p.name}"`,
+            `"${numInput}"`
+          ]);
+        });
+
+        const csvContent = '\uFEFF' + csvRows.map(r => r.join(',')).join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', `インボイス未設定取引先一覧_${new Date().toISOString().slice(0, 10)}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      });
+
+      // freee API 一括更新処理（番号設定と同時に適格事業者フラグもtrueにする）
+      saveToFreeeBtn.addEventListener('click', async () => {
+        const token = getAccessToken();
+        const companyId = getCompanyId();
+        
+        const targets = [];
+        unregisteredPartners.forEach((p, idx) => {
+          const val = document.getElementById(`input_num_${idx}`)?.value.trim();
+          if (val) {
+            targets.push({ id: p.id, name: p.name, number: val });
+          }
+        });
+
+        if (targets.length === 0) {
+          alert('更新対象となる番号が入力されていません。');
+          return;
+        }
+
+        if (!confirm(`${targets.length} 件の取引先に適格番号を登録し、「適格請求書発行事業者」として反映しますか？`)) return;
+
+        saveToFreeeBtn.disabled = true;
+        clearError();
+
+        try {
+          for (const t of targets) {
+            const res = await fetch(`${CONFIG.apiBase}/partners/${t.id}`, {
+              method: 'PUT',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                company_id: Number(companyId),
+                payer_walletable_id: t.number,
+                qualified_invoice_issuer: true
+              })
+            });
+            if (!res.ok) {
+              const errData = await res.json().catch(() => ({}));
+              throw new Error(`[${t.name}] の更新に失敗しました: ${JSON.stringify(errData)}`);
+            }
+          }
+          alert('登録番号の一括更新および「適格事業者」の設定が完了しました！');
+          fetchPartnersBtn.click(); // 再抽出
+        } catch (err) {
+          showError('更新エラー: ' + err.message);
+        } finally {
+          saveToFreeeBtn.disabled = false;
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
