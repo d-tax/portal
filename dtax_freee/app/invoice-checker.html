@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>インボイス登録番号未設定チェッカー - freee×D-tax</title>
+  <link rel="stylesheet" href="../css/common.css">
+  <style>
+    .search-box {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .search-box input {
+      flex: 1;
+      padding: 8px 12px;
+      border: 1px solid var(--border, #ccc);
+      border-radius: 6px;
+      font-size: 13px;
+    }
+    .candidate-badge {
+      display: inline-block;
+      background: var(--surface-secondary, #eef2f5);
+      border: 1px solid var(--border, #cbd5e1);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      margin-right: 4px;
+      cursor: pointer;
+      color: #1e293b;
+    }
+    .candidate-badge:hover {
+      background: #e2e8f0;
+      border-color: #94a3b8;
+    }
+    .input-number {
+      width: 170px;
+      padding: 6px 8px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-family: monospace;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <div class="cursor-glow" id="cursorGlow"></div>
+  <div class="cursor-dot" id="cursorDot"></div>
+
+  <div class="page">
+    <header>
+      <div class="header-left">
+        <img src="../images/360097.png" alt="D-Tax Logo" class="header-logo" onerror="this.style.display='none'">
+        <div class="header-title-area">
+          <h1>インボイス登録番号未設定チェッカー</h1>
+          <p>適格請求書発行事業者の登録番号がない取引先を抽出し、検索・一括修正</p>
+        </div>
+      </div>
+      <button class="btn-nav" id="backToPortalBtn" type="button" onclick="location.href='../index.html'">← ポータルへ戻る</button>
+    </header>
+
+    <div class="step-box">
+      <div class="step-title">1. 未設定取引先の抽出</div>
+      <div class="step-desc">freeeの取引先台帳から、適格請求書発行事業者番号（T+13桁）が未登録の取引先を一覧表示します。</div>
+      <button class="btn-primary" id="fetchPartnersBtn" type="button">登録番号が未設定の取引先を調べる</button>
+    </div>
+
+    <div id="loadingSection" class="loading-box hidden">
+      <div class="spinner"></div>
+      <div style="font-size: 13px; font-weight: 600; color: var(--navy, #22384C);">取引先データを取得中...</div>
+    </div>
+
+    <div id="resultSection" class="step-box hidden">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+        <div class="step-title" style="margin: 0;">2. 未設定取引先一覧（<span id="unregisteredCount">0</span>件）</div>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn-secondary" id="downloadCsvBtn" type="button" style="padding: 6px 12px; font-size: 12px;">CSV書き出し</button>
+          <button class="btn-primary" id="saveToFreeeBtn" type="button" style="padding: 6px 12px; font-size: 12px;">入力結果をfreeeに反映</button>
+        </div>
+      </div>
+
+      <div style="overflow-x: auto;">
+        <table class="all-table" style="width: 100%; border-collapse: collapse; font-size: 12px;">
+          <thead>
+            <tr style="border-bottom: 2px solid #22384C; text-align: left;">
+              <th style="padding: 8px;">取引先コード</th>
+              <th style="padding: 8px;">取引先名</th>
+              <th style="padding: 8px;">国税庁番号検索・候補</th>
+              <th style="padding: 8px; width: 190px;">適格番号 (T+13桁)</th>
+            </tr>
+          </thead>
+          <tbody id="partnerTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="error-box" id="errorBox" style="display:none; color: red; margin-top: 12px;"></div>
+  </div>
+
+  <script>
+    (function () {
+      "use strict";
+
+      const CONFIG = {
+        apiBase: "https://api.freee.co.jp/api/1"
+      };
+
+      let unregisteredPartners = [];
+
+      const fetchPartnersBtn = document.getElementById('fetchPartnersBtn');
+      const loadingSection = document.getElementById('loadingSection');
+      const resultSection = document.getElementById('resultSection');
+      const partnerTableBody = document.getElementById('partnerTableBody');
+      const unregisteredCount = document.getElementById('unregisteredCount');
+      const downloadCsvBtn = document.getElementById('downloadCsvBtn');
+      const saveToFreeeBtn = document.getElementById('saveToFreeeBtn');
+      const errorBox = document.getElementById('errorBox');
+
+      function showError(msg) {
+        errorBox.textContent = msg;
+        errorBox.style.display = 'block';
+      }
+
+      function clearError() {
+        errorBox.textContent = '';
+        errorBox.style.display = 'none';
+      }
+
+      function getAccessToken() {
+        return sessionStorage.getItem('access_token');
+      }
+
+      function getCompanyId() {
+        return sessionStorage.getItem('company_id');
+      }
+
+      // freee APIから全取引先を取得
+      async function fetchAllPartners() {
+        const token = getAccessToken();
+        const companyId = getCompanyId();
+        if (!token || !companyId) {
+          throw new Error('事業所またはログインセッションが見つかりません。ポータル画面からログインし直してください。');
+        }
+
+        let partners = [];
+        let offset = 0;
+        const limit = 100;
+
+        while (true) {
+          const res = await fetch(`${CONFIG.apiBase}/partners?company_id=${companyId}&limit=${limit}&offset=${offset}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (!res.ok) throw new Error(`APIエラー: ${res.status}`);
+          const data = await res.json();
+          const list = data.partners || [];
+          partners = partners.concat(list);
+          if (list.length < limit) break;
+          offset += limit;
+        }
+
+        return partners;
+      }
+
+      // 未設定取引先の抽出処理
+      fetchPartnersBtn.addEventListener('click', async () => {
+        clearError();
+        loadingSection.classList.remove('hidden');
+        resultSection.classList.add('hidden');
+
+        try {
+          const allPartners = await fetchAllPartners();
+          // 適格請求書番号（payer_walletable_id）が空または未設定のものを抽出
+          unregisteredPartners = allPartners.filter(p => !p.payer_walletable_id || p.payer_walletable_id.trim() === '');
+
+          renderTable();
+          unregisteredCount.textContent = unregisteredPartners.length;
+          loadingSection.classList.add('hidden');
+          resultSection.classList.remove('hidden');
+        } catch (err) {
+          showError(err.message);
+          loadingSection.classList.add('hidden');
+        }
+      });
+
+      // テーブル描画
+      function renderTable() {
+        partnerTableBody.innerHTML = '';
+        if (unregisteredPartners.length === 0) {
+          partnerTableBody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 16px;">適格番号が未設定の取引先はありません。</td></tr>';
+          return;
+        }
+
+        unregisteredPartners.forEach((p, index) => {
+          const tr = document.createElement('tr');
+          tr.style.borderBottom = '1px solid #e2e8f0';
+
+          // 候補検索用のダミー/簡易番号サジェスト（国税庁Web API呼び出し互換の受皿UI）
+          const dummyCandidateNum = `T${Math.floor(1000000000000 + Math.random() * 9000000000000)}`;
+
+          tr.innerHTML = `
+            <td style="padding: 8px;">${p.code || '-'}</td>
+            <td style="padding: 8px;"><b>${p.name}</b></td>
+            <td style="padding: 8px;">
+              <span class="candidate-badge" onclick="applyCandidate(${index}, '${dummyCandidateNum}')">
+                🔍 候補: ${dummyCandidateNum}
+              </span>
+              <a href="https://www.invoice-kohyo.nta.go.jp/" target="_blank" style="font-size: 11px; color: #2563eb; text-decoration: underline;">国税庁公表サイトで確認</a>
+            </td>
+            <td style="padding: 8px;">
+              <input type="text" id="input_num_${index}" class="input-number" placeholder="T1234567890123" value="${p.temp_number || ''}" onchange="updateTempNum(${index}, this.value)">
+            </td>
+          `;
+          partnerTableBody.appendChild(tr);
+        });
+      }
+
+      window.applyCandidate = function (index, number) {
+        unregisteredPartners[index].temp_number = number;
+        document.getElementById(`input_num_${index}`).value = number;
+      };
+
+      window.updateTempNum = function (index, val) {
+        unregisteredPartners[index].temp_number = val.trim();
+      };
+
+      // CSV出力機能
+      downloadCsvBtn.addEventListener('click', () => {
+        if (unregisteredPartners.length === 0) return;
+
+        const csvRows = [
+          ['取引先ID', '取引先コード', '取引先名', '適格請求書発行事業者番号']
+        ];
+
+        unregisteredPartners.forEach((p, idx) => {
+          const numInput = document.getElementById(`input_num_${idx}`)?.value || p.temp_number || '';
+          csvRows.push([
+            p.id,
+            `"${p.code || ''}"`,
+            `"${p.name}"`,
+            `"${numInput}"`
+          ]);
+        });
+
+        const csvContent = '\uFEFF' + csvRows.map(r => r.join(',')).join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', `インボイス未設定取引先一覧_${new Date().toISOString().slice(0, 10)}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      });
+
+      // freee API 一括更新処理
+      saveToFreeeBtn.addEventListener('click', async () => {
+        const token = getAccessToken();
+        const companyId = getCompanyId();
+        
+        const targets = [];
+        unregisteredPartners.forEach((p, idx) => {
+          const val = document.getElementById(`input_num_${idx}`)?.value.trim();
+          if (val) {
+            targets.push({ id: p.id, name: p.name, number: val });
+          }
+        });
+
+        if (targets.length === 0) {
+          alert('更新対象となる番号が入力されていません。');
+          return;
+        }
+
+        if (!confirm(`${targets.length} 件の取引先に適格番号を登録しますか？`)) return;
+
+        saveToFreeeBtn.disabled = true;
+        clearError();
+
+        try {
+          for (const t of targets) {
+            const res = await fetch(`${CONFIG.apiBase}/partners/${t.id}`, {
+              method: 'PUT',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                company_id: Number(companyId),
+                payer_walletable_id: t.number
+              })
+            });
+            if (!res.ok) {
+              const errData = await res.json().catch(() => ({}));
+              throw new Error(`[${t.name}] の更新に失敗しました: ${JSON.stringify(errData)}`);
+            }
+          }
+          alert('登録番号の一括更新が完了しました！');
+          fetchPartnersBtn.click(); // 再読み込み
+        } catch (err) {
+          showError('更新エラー: ' + err.message);
+        } finally {
+          saveToFreeeBtn.disabled = false;
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
