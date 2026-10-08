@@ -61,6 +61,7 @@
       <button class="btn-primary" id="analyzePartnersBtn" type="button">取引実績のある未登録取引先を調べる</button>
     </div>
 
+    <!-- ローディング表示（loading.gif） -->
     <div id="loadingSection" class="loading-box hidden" style="text-align: center; padding: 24px;">
       <img src="../images/loading.gif" alt="Loading..." style="width: 60px; height: 60px; margin-bottom: 8px; object-fit: contain;" onerror="this.style.display='none'">
       <div style="font-size: 13px; font-weight: 600; color: var(--navy, #22384C);">取引および取引先データを取得・解析中...</div>
@@ -78,8 +79,7 @@
             <tr style="border-bottom: 2px solid #22384C; text-align: left;">
               <th style="padding: 8px;">取引先コード</th>
               <th style="padding: 8px;">取引先名</th>
-              <th style="padding: 8px;">消込実績</th>
-              <th style="padding: 8px;">振込口座の登録状態</th>
+              <th style="padding: 8px;">最終消込取引日</th>
               <th style="padding: 8px;">銀行コード/支店コード</th>
               <th style="padding: 8px;">種別/口座番号</th>
             </tr>
@@ -137,14 +137,13 @@
         return sessionStorage.getItem('company_id');
       }
 
-      // 過去に消込・決済実績のある取引先IDのセットを取得
-      async function fetchSettledPartnerIds(token, companyId) {
-        const settledPartnerIds = new Set();
+      // 過去の消込・決済実績から「取引先ID -> 最終消込取引日」のマッピングを取得
+      async function fetchSettledPartnerMap(token, companyId) {
+        const partnerLastDateMap = new Map();
         let offset = 0;
         const limit = 100;
 
-        // 過去の支出取引（deals）を取得して消込済み取引先を特定
-        while (offset < 500) { // 直近の取引を分析
+        while (offset < 500) {
           const res = await fetch(`${CONFIG.apiBase}/deals?company_id=${companyId}&type=expense&limit=${limit}&offset=${offset}`, {
             headers: { 'Authorization': `Bearer ${token}` }
           });
@@ -153,9 +152,20 @@
           const deals = data.deals || [];
           
           deals.forEach(deal => {
-            // 決済・消込（payments）が存在する、またはstatusがsettledの取引先
             if (deal.partner_id && (deal.status === 'settled' || (deal.payments && deal.payments.length > 0))) {
-              settledPartnerIds.add(deal.partner_id);
+              // 取引日または決済日の取得
+              let dealDate = deal.issue_date;
+              if (deal.payments && deal.payments.length > 0) {
+                const dates = deal.payments.map(p => p.date).filter(Boolean);
+                if (dates.length > 0) {
+                  dealDate = dates.sort().reverse()[0];
+                }
+              }
+
+              const existingDate = partnerLastDateMap.get(deal.partner_id);
+              if (!existingDate || dealDate > existingDate) {
+                partnerLastDateMap.set(deal.partner_id, dealDate);
+              }
             }
           });
 
@@ -163,7 +173,7 @@
           offset += limit;
         }
 
-        return settledPartnerIds;
+        return partnerLastDateMap;
       }
 
       // 全取引先一覧を取得
@@ -200,21 +210,28 @@
             throw new Error('認証セッションが切れています。ポータル画面から再ログインしてください。');
           }
 
-          // 消込実績のある取引先IDと全取引先データを並行取得
-          const [settledIds, allPartners] = await Promise.all([
-            fetchSettledPartnerIds(token, companyId),
+          const [settledMap, allPartners] = await Promise.all([
+            fetchSettledPartnerMap(token, companyId),
             fetchAllPartners(token, companyId)
           ]);
 
-          // 消込実績があり、口座情報（銀行口座番号等）が未登録（空）の取引先をフィルタリング
-          targetPartners = allPartners.filter(p => {
-            const hasHistory = settledIds.has(p.id);
-            // 口座番号情報が存在しないか判定
+          // 消込実績があり、口座番号が未登録の取引先を抽出し、最終消込日を保持
+          targetPartners = [];
+          allPartners.forEach(p => {
+            const lastDate = settledMap.get(p.id);
             const accountNumber = p.partner_bank_account ? p.partner_bank_account.account_number : '';
             const isBankEmpty = !accountNumber || accountNumber.trim() === '';
 
-            return hasHistory && isBankEmpty;
+            if (lastDate && isBankEmpty) {
+              targetPartners.push({
+                ...p,
+                last_settled_date: lastDate
+              });
+            }
           });
+
+          // 最終消込日の新しい順にソート
+          targetPartners.sort((a, b) => (b.last_settled_date || '').localeCompare(a.last_settled_date || ''));
 
           renderTable();
           targetCount.textContent = targetPartners.length;
@@ -230,7 +247,7 @@
       function renderTable() {
         partnerTableBody.innerHTML = '';
         if (targetPartners.length === 0) {
-          partnerTableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 16px;">消込実績があり、口座情報が未登録の取引先はありませんでした。</td></tr>';
+          partnerTableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 16px;">消込実績があり、口座情報が未登録の取引先はありませんでした。</td></tr>';
           return;
         }
 
@@ -243,8 +260,7 @@
           tr.innerHTML = `
             <td style="padding: 8px;">${p.code || '-'}</td>
             <td style="padding: 8px;"><b>${p.name}</b></td>
-            <td style="padding: 8px;"><span style="color:#2563eb; font-weight:600;">あり（消込済）</span></td>
-            <td style="padding: 8px;"><span class="status-badge-empty">未登録 (空白)</span></td>
+            <td style="padding: 8px; font-weight: 600; color: #334155;">${p.last_settled_date || '-'}</td>
             <td style="padding: 8px;">
               <input type="text" id="bank_code_${idx}" class="input-bank" placeholder="銀行コード" value="${bank.bank_code || ''}">
               <input type="text" id="branch_code_${idx}" class="input-bank" placeholder="支店コード" value="${bank.branch_code || ''}">
@@ -269,7 +285,7 @@
         }
 
         const csvRows = [
-          ['取引先ID', '取引先コード', '取引先名', '消込実績', '口座登録状態', '銀行コード', '支店コード', '口座種別', '口座番号']
+          ['取引先ID', '取引先コード', '取引先名', '最終消込取引日', '銀行コード', '支店コード', '口座種別', '口座番号']
         ];
 
         targetPartners.forEach((p, idx) => {
@@ -282,8 +298,7 @@
             p.id,
             `"${p.code || ''}"`,
             `"${p.name}"`,
-            'あり',
-            '未登録',
+            `"${p.last_settled_date || ''}"`,
             `"${bankCode}"`,
             `"${branchCode}"`,
             `"${accountType === 'ordinary' ? '普通' : '当座'}"`,
@@ -359,7 +374,7 @@
           }
 
           alert('振込口座情報の一括登録が完了しました！');
-          analyzePartnersBtn.click(); // 再読み込み
+          analyzePartnersBtn.click();
         } catch (err) {
           showError('更新エラー: ' + err.message);
         } finally {
