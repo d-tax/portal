@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>総合振込 口座未登録チェッカー - freee×D-tax</title>
+  <link rel="stylesheet" href="../css/common.css">
+  <style>
+    .input-bank {
+      width: 100px;
+      padding: 4px 6px;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    .input-account-num {
+      width: 110px;
+      padding: 4px 6px;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 12px;
+    }
+    .status-badge-empty {
+      background: #fee2e2;
+      color: #991b1b;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: bold;
+      font-size: 11px;
+    }
+    .status-badge-ok {
+      background: #dcfce7;
+      color: #166534;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: bold;
+      font-size: 11px;
+    }
+  </style>
+</head>
+<body>
+  <div class="cursor-glow" id="cursorGlow"></div>
+  <div class="cursor-dot" id="cursorDot"></div>
+
+  <div class="page">
+    <header>
+      <div class="header-left">
+        <img src="../images/360097.png" alt="D-Tax Logo" class="header-logo" onerror="this.style.display='none'">
+        <div class="header-title-area">
+          <h1>総合振込 口座未登録チェッカー</h1>
+          <p>過去に決済・消込実績がある取引先のうち、振込口座が未登録の取引先を検出・編集</p>
+        </div>
+      </div>
+      <button class="btn-nav" id="backToPortalBtn" type="button" onclick="location.href='../index.html'">← ポータルへ戻る</button>
+    </header>
+
+    <div class="step-box">
+      <div class="step-title">1. 消込実績のある取引先の分析</div>
+      <div class="step-desc">freeeの取引データから消込・決済履歴のある取引先を抽出し、振込口座情報（銀行コード・支店コード・口座番号）の登録状況をチェックします。</div>
+      <button class="btn-primary" id="analyzePartnersBtn" type="button">取引実績のある未登録取引先を調べる</button>
+    </div>
+
+    <div id="loadingSection" class="loading-box hidden">
+      <div class="spinner"></div>
+      <div style="font-size: 13px; font-weight: 600; color: var(--navy, #22384C);">取引および取引先データを取得・解析中...</div>
+    </div>
+
+    <div id="resultSection" class="step-box hidden">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+        <div class="step-title" style="margin: 0;">2. 抽出結果一覧（<span id="targetCount">0</span>件）</div>
+        <button class="btn-primary" id="saveToFreeeBtn" type="button" style="padding: 6px 12px; font-size: 12px;">入力した口座情報をfreeeに反映</button>
+      </div>
+
+      <div style="overflow-x: auto;">
+        <table class="all-table" style="width: 100%; border-collapse: collapse; font-size: 12px;">
+          <thead>
+            <tr style="border-bottom: 2px solid #22384C; text-align: left;">
+              <th style="padding: 8px;">取引先コード</th>
+              <th style="padding: 8px;">取引先名</th>
+              <th style="padding: 8px;">消込実績</th>
+              <th style="padding: 8px;">振込口座の登録状態</th>
+              <th style="padding: 8px;">銀行コード/支店コード</th>
+              <th style="padding: 8px;">種別/口座番号</th>
+            </tr>
+          </thead>
+          <tbody id="partnerTableBody"></tbody>
+        </table>
+      </div>
+
+      <!-- CSVデータ出力ボタン（結果の下部） -->
+      <div style="margin-top: 16px; text-align: right;">
+        <button class="btn-secondary" id="exportCsvBtn" type="button" style="padding: 10px 20px; font-size: 13px; width: auto; display: inline-flex; align-items: center; gap: 8px;">
+          <img src="../images/dounload.png" alt="" style="width: 16px; height: 16px; object-fit: contain;" onerror="this.style.display='none'">
+          CSVデータを出力する
+        </button>
+      </div>
+    </div>
+
+    <div class="error-box" id="errorBox" style="display:none; color: red; margin-top: 12px;"></div>
+  </div>
+
+  <script>
+    (function () {
+      "use strict";
+
+      const CONFIG = {
+        apiBase: "https://api.freee.co.jp/api/1"
+      };
+
+      let targetPartners = [];
+
+      const analyzePartnersBtn = document.getElementById('analyzePartnersBtn');
+      const loadingSection = document.getElementById('loadingSection');
+      const resultSection = document.getElementById('resultSection');
+      const partnerTableBody = document.getElementById('partnerTableBody');
+      const targetCount = document.getElementById('targetCount');
+      const exportCsvBtn = document.getElementById('exportCsvBtn');
+      const saveToFreeeBtn = document.getElementById('saveToFreeeBtn');
+      const errorBox = document.getElementById('errorBox');
+
+      function showError(msg) {
+        errorBox.textContent = msg;
+        errorBox.style.display = 'block';
+      }
+
+      function clearError() {
+        errorBox.textContent = '';
+        errorBox.style.display = 'none';
+      }
+
+      function getAccessToken() {
+        return sessionStorage.getItem('access_token');
+      }
+
+      function getCompanyId() {
+        return sessionStorage.getItem('company_id');
+      }
+
+      // 過去に消込・決済実績のある取引先IDのセットを取得
+      async function fetchSettledPartnerIds(token, companyId) {
+        const settledPartnerIds = new Set();
+        let offset = 0;
+        const limit = 100;
+
+        // 過去の支出取引（deals）を取得して消込済み取引先を特定
+        while (offset < 500) { // 直近の取引を分析
+          const res = await fetch(`${CONFIG.apiBase}/deals?company_id=${companyId}&type=expense&limit=${limit}&offset=${offset}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (!res.ok) break;
+          const data = await res.json();
+          const deals = data.deals || [];
+          
+          deals.forEach(deal => {
+            // 決済・消込（payments）が存在する、またはstatusがsettledの取引先
+            if (deal.partner_id && (deal.status === 'settled' || (deal.payments && deal.payments.length > 0))) {
+              settledPartnerIds.add(deal.partner_id);
+            }
+          });
+
+          if (deals.length < limit) break;
+          offset += limit;
+        }
+
+        return settledPartnerIds;
+      }
+
+      // 全取引先一覧を取得
+      async function fetchAllPartners(token, companyId) {
+        let partners = [];
+        let offset = 0;
+        const limit = 100;
+
+        while (true) {
+          const res = await fetch(`${CONFIG.apiBase}/partners?company_id=${companyId}&limit=${limit}&offset=${offset}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (!res.ok) throw new Error(`APIエラー: ${res.status}`);
+          const data = await res.json();
+          const list = data.partners || [];
+          partners = partners.concat(list);
+          if (list.length < limit) break;
+          offset += limit;
+        }
+
+        return partners;
+      }
+
+      // 取引分析・口座未登録取引先の抽出処理
+      analyzePartnersBtn.addEventListener('click', async () => {
+        clearError();
+        loadingSection.classList.remove('hidden');
+        resultSection.classList.add('hidden');
+
+        try {
+          const token = getAccessToken();
+          const companyId = getCompanyId();
+          if (!token || !companyId) {
+            throw new Error('認証セッションが切れています。ポータル画面から再ログインしてください。');
+          }
+
+          // 消込実績のある取引先IDと全取引先データを並行取得
+          const [settledIds, allPartners] = await Promise.all([
+            fetchSettledPartnerIds(token, companyId),
+            fetchAllPartners(token, companyId)
+          ]);
+
+          // 消込実績があり、口座情報（銀行口座番号等）が未登録（空）の取引先をフィルタリング
+          targetPartners = allPartners.filter(p => {
+            const hasHistory = settledIds.has(p.id);
+            // 口座番号情報が存在しないか判定
+            const accountNumber = p.partner_bank_account ? p.partner_bank_account.account_number : '';
+            const isBankEmpty = !accountNumber || accountNumber.trim() === '';
+
+            return hasHistory && isBankEmpty;
+          });
+
+          renderTable();
+          targetCount.textContent = targetPartners.length;
+          loadingSection.classList.add('hidden');
+          resultSection.classList.remove('hidden');
+        } catch (err) {
+          showError(err.message);
+          loadingSection.classList.add('hidden');
+        }
+      });
+
+      // テーブル描画処理
+      function renderTable() {
+        partnerTableBody.innerHTML = '';
+        if (targetPartners.length === 0) {
+          partnerTableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 16px;">消込実績があり、口座情報が未登録の取引先はありませんでした。</td></tr>';
+          return;
+        }
+
+        targetPartners.forEach((p, idx) => {
+          const tr = document.createElement('tr');
+          tr.style.borderBottom = '1px solid #e2e8f0';
+
+          const bank = p.partner_bank_account || {};
+
+          tr.innerHTML = `
+            <td style="padding: 8px;">${p.code || '-'}</td>
+            <td style="padding: 8px;"><b>${p.name}</b></td>
+            <td style="padding: 8px;"><span style="color:#2563eb; font-weight:600;">あり（消込済）</span></td>
+            <td style="padding: 8px;"><span class="status-badge-empty">未登録 (空白)</span></td>
+            <td style="padding: 8px;">
+              <input type="text" id="bank_code_${idx}" class="input-bank" placeholder="銀行コード" value="${bank.bank_code || ''}">
+              <input type="text" id="branch_code_${idx}" class="input-bank" placeholder="支店コード" value="${bank.branch_code || ''}">
+            </td>
+            <td style="padding: 8px;">
+              <select id="account_type_${idx}" style="padding:4px; font-size:12px; border-radius:4px; border:1px solid #cbd5e1;">
+                <option value="ordinary" ${bank.account_type === 'ordinary' ? 'selected' : ''}>普通</option>
+                <option value="checking" ${bank.account_type === 'checking' ? 'selected' : ''}>当座</option>
+              </select>
+              <input type="text" id="account_num_${idx}" class="input-account-num" placeholder="口座番号(7桁)" value="${bank.account_number || ''}">
+            </td>
+          `;
+          partnerTableBody.appendChild(tr);
+        });
+      }
+
+      // CSV出力機能
+      exportCsvBtn.addEventListener('click', () => {
+        if (targetPartners.length === 0) {
+          alert('出力するデータがありません。');
+          return;
+        }
+
+        const csvRows = [
+          ['取引先ID', '取引先コード', '取引先名', '消込実績', '口座登録状態', '銀行コード', '支店コード', '口座種別', '口座番号']
+        ];
+
+        targetPartners.forEach((p, idx) => {
+          const bankCode = document.getElementById(`bank_code_${idx}`)?.value || '';
+          const branchCode = document.getElementById(`branch_code_${idx}`)?.value || '';
+          const accountType = document.getElementById(`account_type_${idx}`)?.value || 'ordinary';
+          const accountNum = document.getElementById(`account_num_${idx}`)?.value || '';
+
+          csvRows.push([
+            p.id,
+            `"${p.code || ''}"`,
+            `"${p.name}"`,
+            'あり',
+            '未登録',
+            `"${bankCode}"`,
+            `"${branchCode}"`,
+            `"${accountType === 'ordinary' ? '普通' : '当座'}"`,
+            `"${accountNum}"`
+          ]);
+        });
+
+        const csvContent = '\uFEFF' + csvRows.map(r => r.join(',')).join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', `総合振込_口座未登録取引先一覧_${new Date().toISOString().slice(0, 10)}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      });
+
+      // freee API への口座一括反映処理
+      saveToFreeeBtn.addEventListener('click', async () => {
+        const token = getAccessToken();
+        const companyId = getCompanyId();
+
+        const updateTargets = [];
+        targetPartners.forEach((p, idx) => {
+          const bankCode = document.getElementById(`bank_code_${idx}`)?.value.trim();
+          const branchCode = document.getElementById(`branch_code_${idx}`)?.value.trim();
+          const accountType = document.getElementById(`account_type_${idx}`)?.value;
+          const accountNum = document.getElementById(`account_num_${idx}`)?.value.trim();
+
+          if (accountNum) {
+            updateTargets.push({
+              id: p.id,
+              name: p.name,
+              bank: {
+                bank_code: bankCode,
+                branch_code: branchCode,
+                account_type: accountType,
+                account_number: accountNum
+              }
+            });
+          }
+        });
+
+        if (updateTargets.length === 0) {
+          alert('更新対象となる口座番号が入力されていません。');
+          return;
+        }
+
+        if (!confirm(`${updateTargets.length} 件の取引先に振込口座情報を登録しますか？`)) return;
+
+        saveToFreeeBtn.disabled = true;
+        clearError();
+
+        try {
+          for (const t of updateTargets) {
+            const res = await fetch(`${CONFIG.apiBase}/partners/${t.id}`, {
+              method: 'PUT',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                company_id: Number(companyId),
+                partner_bank_account: t.bank
+              })
+            });
+
+            if (!res.ok) {
+              const errData = await res.json().catch(() => ({}));
+              throw new Error(`[${t.name}] の口座更新に失敗しました: ${JSON.stringify(errData)}`);
+            }
+          }
+
+          alert('振込口座情報の一括登録が完了しました！');
+          analyzePartnersBtn.click(); // 再読み込み
+        } catch (err) {
+          showError('更新エラー: ' + err.message);
+        } finally {
+          saveToFreeeBtn.disabled = false;
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
