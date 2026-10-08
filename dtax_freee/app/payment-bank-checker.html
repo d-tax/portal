@@ -52,7 +52,7 @@
           <p>過去に決済・消込実績がある取引先のうち、振込口座が未登録の取引先を検出・編集</p>
         </div>
       </div>
-      <button class="btn-nav" id="backToPortalBtn" type="button" onclick="location.href='../index.html'">← ポータルへ戻る</button>
+      <button class="btn-nav" id="backToPortalBtn" type="button" onclick="location.href='../dtax_freee'">← ポータルへ戻る</button>
     </header>
 
     <div class="step-box">
@@ -61,8 +61,8 @@
       <button class="btn-primary" id="analyzePartnersBtn" type="button">取引実績のある未登録取引先を調べる</button>
     </div>
 
-    <div id="loadingSection" class="loading-box hidden">
-      <div class="spinner"></div>
+    <div id="loadingSection" class="loading-box hidden" style="text-align: center; padding: 24px;">
+      <img src="../images/loading.gif" alt="Loading..." style="width: 60px; height: 60px; margin-bottom: 8px; object-fit: contain;" onerror="this.style.display='none'">
       <div style="font-size: 13px; font-weight: 600; color: var(--navy, #22384C);">取引および取引先データを取得・解析中...</div>
     </div>
 
