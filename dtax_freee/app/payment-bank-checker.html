@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>総合振込 口座未登録チェッカー - freee×D-tax</title>
+  <title>口座未登録チェッカー - freee×D-tax</title>
   <link rel="stylesheet" href="../css/common.css">
   <style>
     .input-bank {
-      width: 100px;
+      width: 90px;
       padding: 4px 6px;
       border: 1px solid #cbd5e1;
       border-radius: 4px;
@@ -21,22 +21,6 @@
       font-family: monospace;
       font-size: 12px;
     }
-    .status-badge-empty {
-      background: #fee2e2;
-      color: #991b1b;
-      padding: 2px 8px;
-      border-radius: 4px;
-      font-weight: bold;
-      font-size: 11px;
-    }
-    .status-badge-ok {
-      background: #dcfce7;
-      color: #166534;
-      padding: 2px 8px;
-      border-radius: 4px;
-      font-weight: bold;
-      font-size: 11px;
-    }
   </style>
 </head>
 <body>
@@ -49,7 +33,7 @@
         <img src="../images/360097.png" alt="D-Tax Logo" class="header-logo" onerror="this.style.display='none'">
         <div class="header-title-area">
           <h1>総合振込 口座未登録チェッカー</h1>
-          <p>過去に決済・消込実績がある取引先のうち、振込口座が未登録の取引先を検出・編集</p>
+          <p>消込実績がある取引先のうち、振込口座が未登録の取引先を検出・編集</p>
         </div>
       </div>
       <button class="btn-nav" id="backToPortalBtn" type="button" onclick="location.href='../dtax_freee.html'">← ポータルへ戻る</button>
@@ -57,14 +41,14 @@
 
     <div class="step-box">
       <div class="step-title">1. 消込実績のある取引先の分析</div>
-      <div class="step-desc">freeeの取引データから消込・決済履歴のある取引先を抽出し、振込口座情報（銀行コード・支店コード・口座番号）の登録状況をチェックします。</div>
-      <button class="btn-primary" id="analyzePartnersBtn" type="button">取引実績のある未登録取引先を調べる</button>
+      <div class="step-desc">freeeの取引データから消込・決済履歴のある取引先のみを抽出し、振込口座情報（銀行コード・支店コード・口座番号）の登録状況をチェックします。</div>
+      <button class="btn-primary" id="analyzePartnersBtn" type="button">消込実績のある未登録取引先を調べる</button>
     </div>
 
     <!-- ローディング表示（loading.gif） -->
     <div id="loadingSection" class="loading-box hidden" style="text-align: center; padding: 24px;">
       <img src="../images/loading.gif" alt="Loading..." style="width: 60px; height: 60px; margin-bottom: 8px; object-fit: contain;" onerror="this.style.display='none'">
-      <div style="font-size: 13px; font-weight: 600; color: var(--navy, #22384C);">取引および取引先データを取得・解析中...</div>
+      <div style="font-size: 13px; font-weight: 600; color: var(--navy, #22384C);">消込実績および取引先データを取得・解析中...</div>
     </div>
 
     <div id="resultSection" class="step-box hidden">
@@ -88,7 +72,7 @@
         </table>
       </div>
 
-      <!-- CSVデータ出力ボタン（結果の下部） -->
+      <!-- CSVデータ出力ボタン -->
       <div style="margin-top: 16px; text-align: right;">
         <button class="btn-secondary" id="exportCsvBtn" type="button" style="padding: 10px 20px; font-size: 13px; width: auto; display: inline-flex; align-items: center; gap: 8px;">
           <img src="../images/dounload.png" alt="" style="width: 16px; height: 16px; object-fit: contain;" onerror="this.style.display='none'">
@@ -137,13 +121,13 @@
         return sessionStorage.getItem('company_id');
       }
 
-      // 過去の消込・決済実績から「取引先ID -> 最終消込取引日」のマッピングを取得
+      // 過去に「消込（決済）」実績が確実に存在する取引先のみを抽出して「取引先ID -> 最終消込日」を取得
       async function fetchSettledPartnerMap(token, companyId) {
         const partnerLastDateMap = new Map();
         let offset = 0;
         const limit = 100;
 
-        while (offset < 500) {
+        while (offset < 1000) {
           const res = await fetch(`${CONFIG.apiBase}/deals?company_id=${companyId}&type=expense&limit=${limit}&offset=${offset}`, {
             headers: { 'Authorization': `Bearer ${token}` }
           });
@@ -152,10 +136,13 @@
           const deals = data.deals || [];
           
           deals.forEach(deal => {
-            if (deal.partner_id && (deal.status === 'settled' || (deal.payments && deal.payments.length > 0))) {
-              // 取引日または決済日の取得
+            // 厳格条件: statusがsettled（完了）、または決済情報（payments）が実際に存在する取引のみ
+            const hasPayments = deal.payments && deal.payments.length > 0;
+            const isSettled = deal.status === 'settled' || hasPayments;
+
+            if (deal.partner_id && isSettled) {
               let dealDate = deal.issue_date;
-              if (deal.payments && deal.payments.length > 0) {
+              if (hasPayments) {
                 const dates = deal.payments.map(p => p.date).filter(Boolean);
                 if (dates.length > 0) {
                   dealDate = dates.sort().reverse()[0];
@@ -197,7 +184,7 @@
         return partners;
       }
 
-      // 取引分析・口座未登録取引先の抽出処理
+      // 消込実績のある口座未登録取引先のみを抽出
       analyzePartnersBtn.addEventListener('click', async () => {
         clearError();
         loadingSection.classList.remove('hidden');
@@ -215,13 +202,14 @@
             fetchAllPartners(token, companyId)
           ]);
 
-          // 消込実績があり、口座番号が未登録の取引先を抽出し、最終消込日を保持
+          // 消込実績（settledMapに存在する）があり、かつ口座番号が空の取引先のみに限定
           targetPartners = [];
           allPartners.forEach(p => {
             const lastDate = settledMap.get(p.id);
             const accountNumber = p.partner_bank_account ? p.partner_bank_account.account_number : '';
             const isBankEmpty = !accountNumber || accountNumber.trim() === '';
 
+            // 消込実績が1回以上ある（lastDateが存在する）ものだけを対象にする
             if (lastDate && isBankEmpty) {
               targetPartners.push({
                 ...p,
@@ -260,7 +248,7 @@
           tr.innerHTML = `
             <td style="padding: 8px;">${p.code || '-'}</td>
             <td style="padding: 8px;"><b>${p.name}</b></td>
-            <td style="padding: 8px; font-weight: 600; color: #334155;">${p.last_settled_date || '-'}</td>
+            <td style="padding: 8px; font-weight: 600; color: #2563eb;">${p.last_settled_date || '-'}</td>
             <td style="padding: 8px;">
               <input type="text" id="bank_code_${idx}" class="input-bank" placeholder="銀行コード" value="${bank.bank_code || ''}">
               <input type="text" id="branch_code_${idx}" class="input-bank" placeholder="支店コード" value="${bank.branch_code || ''}">
