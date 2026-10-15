@@ -199,35 +199,57 @@
       });
 
       function renderTable() {
-        partnerTableBody.innerHTML = '';
-        if (unregisteredPartners.length === 0) {
-          partnerTableBody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 16px;">対象となる未設定の取引先は見つかりませんでした。</td></tr>';
-          return;
-
-          // renderTable 内の fetch 処理部分
-// 非同期で Gemini 検索APIをコール
-fetchCandidateDirectFromGemini(p, index, GEMINI_API_KEY).then(result => {
-  const cell = document.getElementById(`candidate_cell_${index}`);
-  if (!cell) return;
-
-  // result.number に T番号が入っているか判定
-  if (result && result.number) {
-    cell.innerHTML = `
-      <span class="candidate-badge" onclick="applyCandidate(${index}, '${result.number}')">
-        ✨ 候補: ${result.number} (適用)
-      </span>
-      <a href="https://www.invoice-kohyo.nta.go.jp/" target="_blank" style="font-size: 11px; color: #2563eb; text-decoration: underline;">国税庁Web</a>
-    `;
-  } else {
-    const errorMsg = result ? result.debugMsg : '取得失敗';
-    cell.innerHTML = `
-      <span class="no-candidate" style="color: #ef4444;" title="${result?.rawText || ''}">❌ ${errorMsg}</span>
-      <br>
-      <a href="https://www.google.com/search?q=${encodeURIComponent(p.name + ' インボイス 登録番号')}" target="_blank" style="font-size: 10px; color: #64748b; text-decoration: underline;">手動Google検索</a>
-    `;
+  partnerTableBody.innerHTML = '';
+  if (unregisteredPartners.length === 0) {
+    partnerTableBody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 16px;">対象となる未設定の取引先は見つかりませんでした。</td></tr>';
+    return;
   }
-});
+
+  const isKeyConfigured = GEMINI_API_KEY && GEMINI_API_KEY !== "YOUR_GEMINI_API_KEY_HERE";
+
+  unregisteredPartners.forEach((p, index) => {
+    const tr = document.createElement('tr');
+    tr.style.borderBottom = '1px solid #e2e8f0';
+
+    tr.innerHTML = `
+      <td style="padding: 8px;">${p.code || '-'}</td>
+      <td style="padding: 8px;"><b>${p.name}</b></td>
+      <td style="padding: 8px;" id="candidate_cell_${index}">
+        <span class="searching-text">${isKeyConfigured ? '🤖 Gemini 検索中...' : '⚠️ API Key未設定'}</span>
+      </td>
+      <td style="padding: 8px;">
+        <input type="text" id="input_num_${index}" class="input-number" placeholder="T1234567890123" value="${p.temp_number || ''}" onchange="updateTempNum(${index}, this.value)">
+      </td>
+    `;
+    partnerTableBody.appendChild(tr);
+
+    if (isKeyConfigured) {
+      // Gemini 検索実行
+      fetchCandidateDirectFromGemini(p, index, GEMINI_API_KEY).then(result => {
+        const cell = document.getElementById(`candidate_cell_${index}`);
+        if (!cell) return;
+
+        // 【修正ポイント】 result.number が存在するかチェック
+        if (result && result.number) {
+          const validNumber = result.number; // 例: "T1234567890123"
+          cell.innerHTML = `
+            <span class="candidate-badge" onclick="applyCandidate(${index}, '${validNumber}')">
+              ✨ 候補: ${validNumber} (適用)
+            </span>
+            <a href="https://www.invoice-kohyo.nta.go.jp/" target="_blank" style="font-size: 11px; color: #2563eb; text-decoration: underline;">国税庁Web</a>
+          `;
+        } else {
+          const errorMsg = result ? result.debugMsg : '取得失敗';
+          cell.innerHTML = `
+            <span class="no-candidate" style="color: #ef4444;" title="${result?.rawText || ''}">❌ ${errorMsg}</span>
+            <br>
+            <a href="https://www.google.com/search?q=${encodeURIComponent(p.name + ' インボイス 登録番号')}" target="_blank" style="font-size: 10px; color: #64748b; text-decoration: underline;">手動Google検索</a>
+          `;
         }
+      });
+    }
+  });
+}
 
         const isKeyConfigured = GEMINI_API_KEY && GEMINI_API_KEY !== "YOUR_GEMINI_API_KEY_HERE";
 
