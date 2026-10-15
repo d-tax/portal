@@ -19,8 +19,6 @@
     .dropdown-item img { width: 16px; height: 16px; object-fit: contain; }
     .dropdown-item:hover { background: var(--bg); }
 
-
-
     .btn-secondary { background: var(--surface); border: 1px solid var(--border); color: var(--text-main); padding: 11px 20px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; width: 100%; text-align: center; transition: all 0.2s; box-shadow: var(--shadow-sm); }
     .btn-secondary:hover { background: var(--bg); border-color: var(--border-hover); box-shadow: var(--shadow-md); }
     .btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -191,7 +189,7 @@
         <b>【一覧に入る条件】</b>
         <ul>
           <li><b>毎月:</b> 2ヶ月以上続けて支払があり、最初の支払月から今日までのうち支払があった月の割合（継続率）が基準以上の取引先。今月分は未登録でも数えません。</li>
-          <li><b>毎年:</b> 約1年（11〜13ヶ月）の間隔で2年続けて支払があり、最初の支払から今日までの毎年の支払時期（前後45日）に支払があった割合が基準以上の取引先。<b>年に複数回（年に2ヶ月以上）発生している取引先は自動除外されます。</b></li>
+          <li><b>毎年:</b> 約1年（11〜13ヶ月）の間隔で2年続けて支払があり、最初の支払から今日までの毎年の支払時期（前後45日）に支払があった割合が基準以上の取引先。<b>1年間に2回以上発生している取引先は除外されます。</b></li>
         </ul>
         ※表示される日付・年月や登録履歴は、すべて取引の<b>「発生日」</b>を基準に集計・表示しています。<br>
         毎年の分析は損益計算書の勘定科目が対象のため、預り金・借入金など貸借対照表の科目の支払は含まれません。<br>
@@ -263,7 +261,7 @@
 
       <div class="actions-right">
         <div class="menu-container" style="display: inline-block;">
-          <button class="btn-secondary btn-small" id="exportMenuBtn" type="button"><img src="../images/dtax_puni.png" alt="">CSVデータを出力する</button>
+          <button class="btn-secondary btn-small" id="exportMenuBtn" type="button"><img src="../images/dounload.png" alt="">CSVデータを出力する</button>
           <div class="dropdown-menu" id="exportDropdownMenu" style="min-width: 200px;">
             <button class="dropdown-item" id="exportViewBtn" type="button">表示中の一覧を出力</button>
             <button class="dropdown-item" id="exportAlertBtn" type="button">漏れの疑いのみを出力</button>
@@ -353,7 +351,6 @@
       const STORE_KEY = `paymentWatch:v3:${companyId}`;
       function defaultStore() { return { analyzed: {}, settings: { ratioTh: { '毎月': 70, '毎年': 60 } }, items: {} }; }
       
-      // 画面を開くたびに過去の分析結果はクリアして最新分析を促す
       let store = defaultStore();
 
       function saveStore() {
@@ -559,23 +556,26 @@
         return { ratio: hits / span, note: `${hits}/${span}ヶ月`, first, curPaid, curLate, alert: missing > 0, flag };
       }
 
-      // 毎年：年に1回だけ発生するサブスク等の支払いを検出（複数回ある取引を除外）
+      // 毎年：年に1回だけ発生するサブスク等の支払いを検出（年に2回以上ある取引を徹底除去）
       function annualStats(item, today) {
         const winStart = addMonths(new Date(today.getFullYear(), today.getMonth(), 1), -36);
         const dates = item.dates.map(parse).filter((d) => d >= winStart);
         if (dates.length < 2) return null;
 
-        // 【要件変更】年に複数回ある取引は除外する
-        // 全対象月（最大37ヶ月）において、発生月数の合計が年に複数回（平均1.5回/年以上＝37ヶ月で4月以上、または任意の12ヶ月で3月以上）あれば除外
-        const activeMonths = Object.keys(item.mon).filter(k => {
-          const d = parse(`${k}-01`);
-          return d >= winStart;
-        });
-        if (activeMonths.length >= 4) return null; // 37ヶ月間で4ヶ月以上発生があれば「年複数回」とみなして除外
+        // 取引が発生した年月のリスト（昇順）
+        const activeMonths = Object.keys(item.mon).filter(k => parse(`${k}-01`) >= winStart).sort();
 
-        // 直近12ヶ月に2ヶ月以上発生がある場合も除外
-        const recentStart = addMonths(new Date(today.getFullYear(), today.getMonth(), 1), -12);
-        if (activeMonths.filter(k => parse(`${k}-01`) >= recentStart).length >= 2) return null;
+        // 任意のスライド1年枠（12ヶ月）において、発生月が2ヶ月以上ある場合は「年2回以上」として除外
+        for (let i = 0; i < activeMonths.length; i++) {
+          const startM = parse(`${activeMonths[i]}-01`);
+          const endM = addMonths(startM, 12);
+          const countInYear = activeMonths.filter(k => {
+            const d = parse(`${k}-01`);
+            return d >= startM && d < endM;
+          }).length;
+
+          if (countInYear >= 2) return null; // 年に2回以上あれば即座に除外
+        }
 
         const reps = [];
         dates.forEach((d) => {
