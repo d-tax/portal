@@ -203,6 +203,27 @@
         if (unregisteredPartners.length === 0) {
           partnerTableBody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 16px;">対象となる未設定の取引先は見つかりませんでした。</td></tr>';
           return;
+
+          // renderTable 内の fetch 処理部分
+fetchCandidateDirectFromGemini(p, index, GEMINI_API_KEY).then(result => {
+  const cell = document.getElementById(`candidate_cell_${index}`);
+  if (!cell) return;
+
+  if (result.number) {
+    cell.innerHTML = `
+      <span class="candidate-badge" onclick="applyCandidate(${index}, '${result.number}')">
+        ✨ 候補: ${result.number} (適用)
+      </span>
+      <a href="https://www.invoice-kohyo.nta.go.jp/" target="_blank" style="font-size: 11px; color: #2563eb; text-decoration: underline;">国税庁Web</a>
+    `;
+  } else {
+    cell.innerHTML = `
+      <span class="no-candidate" title="${result.rawText || ''}">❌ ${result.debugMsg}</span>
+      <br>
+      <a href="https://www.google.com/search?q=${encodeURIComponent(p.name + ' インボイス 登録番号')}" target="_blank" style="font-size: 10px; color: #64748b; text-decoration: underline;">手動Google検索</a>
+    `;
+  }
+});
         }
 
         const isKeyConfigured = GEMINI_API_KEY && GEMINI_API_KEY !== "YOUR_GEMINI_API_KEY_HERE";
@@ -247,24 +268,20 @@
         });
       }
 
-     // 修正版：Gemini API 呼び出し処理
-async function fetchCandidateDirectFromGemini(partner, apiKey) {
+  async function fetchCandidateDirectFromGemini(partner, index, apiKey) {
   const addressStr = [partner.street_name1, partner.street_name2].filter(Boolean).join(' ');
-  
-  // 検索クエリを人間がGoogle検索するときと同じようなシンプルな形にする
-  const searchQuery = `${partner.name} ${addressStr} インボイス 登録番号 T`;
+  const searchQuery = `${partner.name} ${addressStr} インボイス 登録番号 T`.trim();
 
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
   const prompt = `
-以下の検索クエリでウェブ検索を行い、対象企業の「適格請求書発行事業者の登録番号（Tから始まる13桁の番号）」を探してください。
+以下の企業についてGoogle検索を行い、適格請求書発行事業者の登録番号（Tから始まる13桁の番号）を特定してください。
 
-検索対象: ${searchQuery}
+対象: ${searchQuery}
 
-【指示】
-・Web検索結果の中から、この企業に該当する「T + 13桁の数字」（例: T1234567890123）を探して出力してください。
-・見つかった場合は、説明文などは一切付けず「T1234567890123」の形式だけで返してください。
-・見つからなかった場合のみ「NONE」と返してください。
+【条件】
+・Tから始まる13桁の番号（例: T1234567890123）が見つかった場合は、その番号のみを出力してください。
+・見つからない場合は NONE と出力してください。
 `;
 
   const requestBody = {
@@ -272,7 +289,7 @@ async function fetchCandidateDirectFromGemini(partner, apiKey) {
       parts: [{ text: prompt }]
     }],
     tools: [{
-      google_search: {} // Google 検索ツールを有効化
+      google_search: {} // Google 検索ツール
     }]
   };
 
@@ -283,29 +300,56 @@ async function fetchCandidateDirectFromGemini(partner, apiKey) {
       body: JSON.stringify(requestBody)
     });
 
-    if (!res.ok) {
-      console.error('Gemini API エラー Status:', res.status);
-      return null;
-    }
-
     const data = await res.json();
-    
-    // Geminiの返答テキストから抽出
-    const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    
-    // プロンプトの返答だけでなく、Grounding（Google検索の参照結果データ）の中からもT番号を探すガードを追加
-    let match = responseText.match(/T\d{13}/);
 
-    // もし返答本文になくても、検索グラウンディング情報の中にT番号があれば拾う
-    if (!match) {
-      const groundingJson = JSON.stringify(data.candidates?.[0]?.groundingMetadata || {});
-      match = groundingJson.match(/T\d{13}/);
+    // ----------------------------------------------------
+    // 🔍 コンソール詳細ログ出力 (F12 で確認可能)
+    // ----------------------------------------------------
+    console.group(`[Debug Log] ${partner.name}`);
+    console.log("1. HTTP Status:", res.status);
+    console.log("2. API Raw Response Data:", data);
+
+    if (!res.ok) {
+      console.error("API Error Payload:", data);
+      console.groupEnd();
+      return { number: null, debugMsg: `APIエラー (${res.status}): ${data.error?.message || '不明'}` };
     }
 
-    return match ? match[0] : null;
+    const candidate = data.candidates?.[0];
+    const text = candidate?.content?.parts?.[0]?.text || '';
+    const groundingMetadata = candidate?.groundingMetadata;
+
+    console.log("3. Gemini Generated Text:", text);
+    console.log("4. Google Search Grounding Metadata:", groundingMetadata);
+    console.groupEnd();
+    // ----------------------------------------------------
+
+    // 1. テキストからのT番号抽出
+    let match = text.match(/T\d{13}/);
+
+    // 2. メタデータ（検索参照URLやWebスニペット）からのT番号抽出
+    if (!match && groundingMetadata) {
+      const metaStr = JSON.stringify(groundingMetadata);
+      match = metaStr.match(/T\d{13}/);
+    }
+
+    if (match) {
+      return { number: match[0], debugMsg: null };
+    } else {
+      // 理由ログの生成
+      let reason = "該当なし(NONE)";
+      if (!groundingMetadata?.webSearchQueries) {
+        reason = "Google検索が実行されませんでした";
+      } else {
+        const executedQueries = groundingMetadata.webSearchQueries.join(', ');
+        reason = `検索実行済 [${executedQueries}] ですがT番号検出できず`;
+      }
+      return { number: null, debugMsg: reason, rawText: text };
+    }
+
   } catch (err) {
-    console.error('Gemini Fetch エラー:', err);
-    return null;
+    console.error(`[Error] ${partner.name}:`, err);
+    return { number: null, debugMsg: `通信エラー: ${err.message}` };
   }
 }
 
