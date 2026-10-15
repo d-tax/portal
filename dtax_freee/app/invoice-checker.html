@@ -247,55 +247,67 @@
         });
       }
 
-      // Gemini REST API (v1beta) を呼び出す処理
-      async function fetchCandidateDirectFromGemini(partner, apiKey) {
-        const addressStr = [partner.street_name1, partner.street_name2].filter(Boolean).join(' ');
-        const searchTarget = addressStr ? `${partner.name}（所在地: ${addressStr}）` : partner.name;
+     // 修正版：Gemini API 呼び出し処理
+async function fetchCandidateDirectFromGemini(partner, apiKey) {
+  const addressStr = [partner.street_name1, partner.street_name2].filter(Boolean).join(' ');
+  
+  // 検索クエリを人間がGoogle検索するときと同じようなシンプルな形にする
+  const searchQuery = `${partner.name} ${addressStr} インボイス 登録番号 T`;
 
-        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
-        const prompt = `
-以下の企業・事業者について、Google検索を用いて「適格請求書発行事業者の登録番号（Tから始まる13桁の番号）」を特定してください。
+  const prompt = `
+以下の検索クエリでウェブ検索を行い、対象企業の「適格請求書発行事業者の登録番号（Tから始まる13桁の番号）」を探してください。
 
-対象企業: ${searchTarget}
+検索対象: ${searchQuery}
 
-【条件】
-・検索結果から間違いなく該当企業の登録番号であると確認できた場合のみ、半角の「T13桁の数字」（例: T1234567890123）を出力してください。
-・候補が複数あって特定できない場合や、番号が見つからない場合は「NONE」とだけ出力してください。
-・余計な解説文は一切出力せず、登録番号（例: T1234567890123）または「NONE」のみを出力してください。
+【指示】
+・Web検索結果の中から、この企業に該当する「T + 13桁の数字」（例: T1234567890123）を探して出力してください。
+・見つかった場合は、説明文などは一切付けず「T1234567890123」の形式だけで返してください。
+・見つからなかった場合のみ「NONE」と返してください。
 `;
 
-        const requestBody = {
-          contents: [{
-            parts: [{ text: prompt }]
-          }],
-          tools: [{
-            google_search: {} // Google 検索ツールを有効化
-          }]
-        };
+  const requestBody = {
+    contents: [{
+      parts: [{ text: prompt }]
+    }],
+    tools: [{
+      google_search: {} // Google 検索ツールを有効化
+    }]
+  };
 
-        try {
-          const res = await fetch(endpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(requestBody)
-          });
+  try {
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(requestBody)
+    });
 
-          if (!res.ok) {
-            console.error('Gemini API レスポンスエラー Status:', res.status);
-            return null;
-          }
+    if (!res.ok) {
+      console.error('Gemini API エラー Status:', res.status);
+      return null;
+    }
 
-          const data = await res.json();
-          const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-          const match = text.match(/T\d{13}/);
+    const data = await res.json();
+    
+    // Geminiの返答テキストから抽出
+    const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    
+    // プロンプトの返答だけでなく、Grounding（Google検索の参照結果データ）の中からもT番号を探すガードを追加
+    let match = responseText.match(/T\d{13}/);
 
-          return match ? match[0] : null;
-        } catch (err) {
-          console.error('Gemini Fetch エラー:', err);
-          return null;
-        }
-      }
+    // もし返答本文になくても、検索グラウンディング情報の中にT番号があれば拾う
+    if (!match) {
+      const groundingJson = JSON.stringify(data.candidates?.[0]?.groundingMetadata || {});
+      match = groundingJson.match(/T\d{13}/);
+    }
+
+    return match ? match[0] : null;
+  } catch (err) {
+    console.error('Gemini Fetch エラー:', err);
+    return null;
+  }
+}
 
       window.applyCandidate = function (index, number) {
         unregisteredPartners[index].temp_number = number;
