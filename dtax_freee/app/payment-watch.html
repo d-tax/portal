@@ -3,24 +3,144 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>総合振込 口座未登録チェッカー - freee×D-tax</title>
+  <title>支払登録漏れチェッカー - freee拡張ポータル</title>
   <link rel="stylesheet" href="../css/common.css">
   <style>
-    .input-bank {
-      width: 90px;
-      padding: 4px 6px;
-      border: 1px solid #cbd5e1;
-      border-radius: 4px;
-      font-size: 12px;
-    }
-    .input-account-num {
-      width: 110px;
-      padding: 4px 6px;
-      border: 1px solid #cbd5e1;
-      border-radius: 4px;
-      font-family: monospace;
-      font-size: 12px;
-    }
+    .app-header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+    .app-tag { font-size: 12px; color: var(--text-muted); background: var(--surface); border: 1px solid var(--border); padding: 6px 12px; border-radius: 6px; }
+
+    /* メニュー */
+    .menu-container { position: relative; }
+    .hamburger-btn { background: var(--surface); border: 1px solid var(--border); padding: 8px 12px; border-radius: 8px; cursor: pointer; display: flex; flex-direction: column; gap: 4px; align-items: center; justify-content: center; width: 40px; height: 40px; }
+    .hamburger-btn span { display: block; width: 18px; height: 2px; background: var(--text-main); border-radius: 2px; }
+    .dropdown-menu { display: none; position: absolute; right: 0; top: calc(100% + 8px); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; box-shadow: var(--shadow-md); padding: 6px; z-index: 100; min-width: 200px; }
+    .dropdown-menu.show { display: block; }
+    .dropdown-item { width: 100%; background: transparent; border: none; padding: 10px 12px; text-align: left; font-size: 13px; color: var(--text-main); cursor: pointer; border-radius: 6px; display: flex; align-items: center; gap: 8px; font-weight: 500; transition: background 0.2s; }
+    .dropdown-item img { width: 16px; height: 16px; object-fit: contain; }
+    .dropdown-item:hover { background: var(--bg); }
+
+
+
+    .btn-secondary { background: var(--surface); border: 1px solid var(--border); color: var(--text-main); padding: 11px 20px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; width: 100%; text-align: center; transition: all 0.2s; box-shadow: var(--shadow-sm); }
+    .btn-secondary:hover { background: var(--bg); border-color: var(--border-hover); box-shadow: var(--shadow-md); }
+    .btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-small { padding: 9px 16px; font-size: 13px; width: auto; display: inline-flex; align-items: center; gap: 8px; }
+    .btn-small img { width: 16px; height: 16px; object-fit: contain; }
+
+    .info-box { background: var(--primary-light); border: 1px solid rgba(37, 99, 235, 0.2); color: var(--text-main); padding: 14px 16px; border-radius: 8px; font-size: 13px; margin-top: 16px; line-height: 1.6; }
+    .info-box ul { margin: 6px 0 0 20px; padding: 0; }
+
+    .loading-box { text-align: center; padding: 40px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-top: 16px; box-shadow: var(--shadow-sm); }
+    .spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 12px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .progress-track { height: 6px; background: var(--bg); border-radius: 3px; margin: 12px auto 0; max-width: 320px; overflow: hidden; }
+    .progress-fill { height: 100%; width: 0; background: var(--primary); transition: width 0.2s; }
+
+    .control-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 14px; }
+    .control-row label, .control-row .lbl { font-size: 13px; color: var(--text-muted); display: inline-flex; align-items: center; gap: 6px; }
+    .control-row input[type="number"], .control-row input[type="search"] { font-size: 13px; padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text-main); }
+    .control-row input[type="number"] { width: 64px; }
+    .control-row input[type="search"] { min-width: 200px; }
+    .meta-line { font-size: 12px; color: var(--text-muted); margin-top: 10px; line-height: 1.7; }
+
+    .summary { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; margin-bottom: 16px; box-shadow: var(--shadow-sm); }
+    .summary-stats { display: flex; flex-wrap: wrap; gap: 28px; }
+    .stat .num { font-size: 24px; font-weight: 700; display: block; font-variant-numeric: tabular-nums; }
+    .stat .num.danger { color: var(--danger-text, #b91c1c); }
+    .stat .lbl { font-size: 12px; color: var(--text-muted); }
+
+    .seg { display: inline-flex; background: var(--bg); padding: 3px; border-radius: 8px; border: 1px solid var(--border); gap: 2px; }
+    .seg button { background: transparent; border: 1px solid transparent; padding: 5px 12px; font-size: 12px; font-weight: 600; border-radius: 6px; cursor: pointer; color: var(--text-muted); white-space: nowrap; }
+    .seg button:hover { color: var(--text-main); }
+    .seg button.active { background: var(--surface); color: var(--text-main); border-color: var(--border); box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+    .seg .cnt { font-weight: 500; margin-left: 4px; opacity: 0.75; }
+
+    /* 除外する勘定科目 */
+    .exclude-panel { border: 1px solid var(--border); border-radius: 8px; background: var(--surface); margin-bottom: 14px; }
+    .exclude-panel summary { cursor: pointer; padding: 12px 14px; font-size: 13px; font-weight: 600; color: var(--text-main); list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    .exclude-panel summary::-webkit-details-marker { display: none; }
+    .exclude-panel summary::after { content: '開く'; font-size: 12px; font-weight: 500; color: var(--text-muted); }
+    .exclude-panel[open] summary::after { content: '閉じる'; }
+    .exclude-panel .sum-note { font-weight: 400; color: var(--text-muted); font-size: 12px; margin-left: 8px; }
+    .exclude-body { padding: 0 14px 14px; }
+    .exclude-help { font-size: 12px; color: var(--text-muted); line-height: 1.7; margin-bottom: 10px; }
+    .acc-group-title { font-size: 12px; font-weight: 700; color: var(--text-muted); margin: 12px 0 6px; }
+    .acc-list { display: flex; flex-wrap: wrap; gap: 6px; }
+    .acc-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; padding: 5px 10px; border: 1px solid var(--border); border-radius: 999px; cursor: pointer; background: var(--surface); color: var(--text-main); user-select: none; }
+    .acc-chip input { margin: 0; accent-color: #991b1b; }
+    .acc-chip.on { background: #fef2f2; border-color: #fca5a5; color: #991b1b; }
+    .acc-chip .n { color: var(--text-muted); font-variant-numeric: tabular-nums; }
+    .acc-chip .rec { font-size: 10px; font-weight: 700; color: #92400e; }
+    .link-btn { background: none; border: none; color: var(--primary); font-size: 12px; cursor: pointer; padding: 0; text-decoration: underline; margin-top: 10px; }
+
+    /* 一覧 */
+    .all-table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow-sm); }
+    .all-table th, .all-table td { padding: 12px 12px; text-align: left; font-size: 13px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .all-table th { background: var(--bg); font-weight: 600; color: var(--text-muted); white-space: nowrap; }
+    .all-table td.nowrap { white-space: nowrap; }
+    .all-table tr.alert-row td:first-child { box-shadow: inset 3px 0 0 #dc2626; }
+    .table-wrap { overflow-x: auto; max-height: 720px; overflow-y: auto; border-radius: var(--radius); }
+    .table-wrap thead th { position: sticky; top: 0; z-index: 1; }
+    .empty-row td { text-align: center; color: var(--text-muted); padding: 30px; }
+    .sub { display: block; font-size: 11px; color: var(--text-muted); margin-top: 3px; font-weight: 400; }
+    .freq-chip { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 4px; margin-bottom: 4px; }
+    .col-name { min-width: 160px; }
+    .col-name .pname { display: block; color: var(--text-main); font-weight: 700; line-height: 1.45; overflow-wrap: anywhere; }
+    .col-acc { min-width: 96px; line-height: 1.45; }
+    .col-hist { min-width: 300px; }
+    .col-date { white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .col-date .sub { font-variant-numeric: tabular-nums; }
+    .hist-foot span { white-space: nowrap; }
+    .freq-chip.m { background: #eff6ff; color: #1e40af; }
+    .freq-chip.y { background: #f5f3ff; color: #5b21b6; }
+
+    /* 登録履歴：毎月（棒グラフのタイムライン） */
+    .tl { display: inline-flex; gap: 3px; align-items: flex-end; }
+    .tl-cell { width: 20px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .tl-track { width: 15px; height: 34px; border-radius: 3px; background: var(--bg); border: 1px solid var(--border); display: flex; align-items: flex-end; overflow: hidden; position: relative; box-sizing: border-box; }
+    .tl-bar { width: 100%; background: var(--primary); }
+    .tl-cell.pre .tl-track { background: transparent; border-style: dotted; opacity: 0.55; }
+    .tl-cell.miss .tl-track { background: #fef2f2; border-color: #fca5a5; }
+    .tl-cell.miss .tl-track::after, .yg .c.miss::after { content: '×'; position: absolute; inset: 0; display: grid; place-items: center; color: #dc2626; font-size: 11px; font-weight: 700; }
+    .tl-cell.late .tl-track { border: 1.5px dashed #dc2626; background: #fff7f7; }
+    .tl-cell.wait .tl-track { border: 1.5px dashed var(--text-muted); background: transparent; }
+    .tl-lbl { font-size: 10px; color: var(--text-muted); line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .tl-lbl.yr { color: var(--text-main); font-weight: 700; }
+
+    /* 登録履歴：毎年（年×月のグリッド） */
+    .yg { display: inline-grid; grid-template-columns: 34px repeat(12, 15px); gap: 3px; align-items: center; }
+    .yg .h { font-size: 9.5px; color: var(--text-muted); text-align: center; line-height: 1; }
+    .yg .y { font-size: 11px; color: var(--text-muted); font-weight: 600; font-variant-numeric: tabular-nums; }
+    .yg .c { width: 15px; height: 15px; border-radius: 3px; background: var(--bg); border: 1px solid var(--border); position: relative; box-sizing: border-box; }
+    .yg .c.on { background: var(--primary); border-color: var(--primary); }
+    .yg .c.miss { background: #fef2f2; border-color: #fca5a5; }
+    .yg .c.wait { border: 1.5px dashed var(--text-muted); background: transparent; }
+    .yg .c.out { background: transparent; border-color: transparent; }
+    .yg .c.future { opacity: 0.35; }
+
+    .hist-foot { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px; font-size: 11.5px; color: var(--text-muted); }
+    .meter { width: 56px; height: 5px; border-radius: 3px; background: var(--bg); border: 1px solid var(--border); overflow: hidden; }
+    .meter i { display: block; height: 100%; background: var(--primary); }
+    .meter.low i { background: #d97706; }
+    .flag { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; border: 1px solid transparent; white-space: nowrap; }
+    .flag.miss { background: #fef2f2; color: #991b1b; border-color: #fca5a5; }
+    .flag.wait { background: #f8fafc; color: #475569; border-color: #cbd5e1; }
+    .flag.ok { background: #ecfdf5; color: #065f46; border-color: #6ee7b7; }
+    .flag.ex { background: var(--bg); color: var(--text-muted); border-color: var(--border); }
+
+    .legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12px; color: var(--text-muted); margin-bottom: 10px; align-items: center; }
+    .legend span { display: inline-flex; align-items: center; gap: 6px; }
+    .sw { width: 12px; height: 12px; border-radius: 3px; border: 1px solid var(--border); background: var(--bg); position: relative; box-sizing: border-box; display: inline-block; }
+    .sw.on { background: var(--primary); border-color: var(--primary); }
+    .sw.miss { background: #fef2f2; border-color: #fca5a5; }
+    .sw.late { border: 1.5px dashed #dc2626; background: #fff7f7; }
+    .sw.wait { border: 1.5px dashed var(--text-muted); background: transparent; }
+    .sw.pre { border-style: dotted; background: transparent; }
+
+    .section-gap { margin-top: 20px; }
+    .actions-right { margin-top: 16px; display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+    .hidden { display: none !important; }
+    :focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
   </style>
 </head>
 <body>
@@ -30,366 +150,742 @@
   <div class="page">
     <header>
       <div class="header-left">
-        <img src="../images/360097.png" alt="D-Tax Logo" class="header-logo" onerror="this.style.display='none'">
+        <img src="../images/360097.png" alt="D-Tax Logo" class="header-logo">
         <div class="header-title-area">
-          <h1>総合振込 口座未登録チェッカー</h1>
-          <p>年1回程度の定期支払い取引先のうち、振込口座が未登録の取引先を検出・編集</p>
+          <h1>支払登録漏れチェッカー</h1>
+          <p>対象事業所: <b id="currentCompanyLabel" style="color:var(--text-main);">読み込み中...</b></p>
         </div>
       </div>
-      <button class="btn-nav" id="backToPortalBtn" type="button" onclick="location.href='../index.html'">← ポータルへ戻る</button>
+      <div class="menu-container">
+        <button class="hamburger-btn" id="hamburgerBtn" aria-label="メニューを開く" type="button">
+          <span></span><span></span><span></span>
+        </button>
+        <div class="dropdown-menu" id="dropdownMenu">
+          <button class="dropdown-item" id="resetBtn" type="button">この事業所の分析結果を削除</button>
+          <button class="dropdown-item" id="logoutBtn" type="button"><img src="../images/logout.png" alt=""> ログアウト</button>
+        </div>
+      </div>
     </header>
 
+    <div class="app-header-bar">
+      <a href="https://d-tax.github.io/dtax_freee/" class="btn-nav">← アプリ選択へ戻る</a>
+      <span class="app-tag">使用中：支払登録漏れチェッカー</span>
+    </div>
+
+    <!-- 支払頻度を分析する -->
     <div class="step-box">
-      <div class="step-title">1. 年1回定期支払い取引先の分析</div>
-      <div class="step-desc">
-        freeeの取引データから消込・決済履歴を分析し、**年1回程度の定期支払い取引先（複数回支払っている取引先は除外）**かつ振込口座が未登録の取引先を抽出します。<br>
-        <span style="font-size: 11px; color: #64748b; margin-top: 4px; display: inline-block;">※ 取引の判定および日付の表示は、freee上の<b>発生日（issue_date）</b>および<b>決済日（payment_date）</b>基準で処理を行っています。</span>
+      <div class="step-title" style="margin-bottom: 6px;">支払頻度を分析する</div>
+      <div class="step-desc">分析する支払頻度を選んで実行します。「毎月」は直近13ヶ月、「毎年」は試算表（損益計算書）の取引先別の金額を直近37ヶ月分、月ごとに使います。毎年の分析は取引件数に関係なく37回の取得で終わります。連続して支払が発生したことのない取引先は一覧に入りません。</div>
+      <div class="control-row">
+        <span class="lbl">支払頻度の分析</span>
+        <div class="seg" id="kindSelect" role="group" aria-label="支払頻度の分析">
+          <button type="button" data-k="毎月" class="active" aria-pressed="true">毎月</button>
+          <button type="button" data-k="毎年" aria-pressed="false">毎年</button>
+        </div>
+        <label>継続率の基準 <input type="number" id="ratioTh" min="0" max="100" step="5"> %以上</label>
       </div>
-      <button class="btn-primary" id="analyzePartnersBtn" type="button">年1回支払いの未登録取引先を調べる</button>
+      <button class="btn-secondary" id="runAnalyzeBtn" type="button">毎月の支払を分析する</button>
+      <div class="meta-line" id="analyzeMeta"></div>
+
+      <div class="info-box">
+        <b>【一覧に入る条件】</b>
+        <ul>
+          <li><b>毎月:</b> 2ヶ月以上続けて支払があり、最初の支払月から今日までのうち支払があった月の割合（継続率）が基準以上の取引先。今月分は未登録でも数えません。</li>
+          <li><b>毎年:</b> 約1年（11〜13ヶ月）の間隔で2年続けて支払があり、最初の支払から今日までの毎年の支払時期（前後45日）に支払があった割合が基準以上の取引先。<b>年に複数回（年に2ヶ月以上）発生している取引先は自動除外されます。</b></li>
+        </ul>
+        ※表示される日付・年月や登録履歴は、すべて取引の<b>「発生日」</b>を基準に集計・表示しています。<br>
+        毎年の分析は損益計算書の勘定科目が対象のため、預り金・借入金など貸借対照表の科目の支払は含まれません。<br>
+        途中から契約した取引先は最初の支払から数えるので不利になりません。途中で解約した取引先は継続率が下がり、一覧から外れます。継続率の基準は「毎月」「毎年」で別々に設定でき、変更は一覧にすぐ反映されます。
+      </div>
+
+      <div id="analyzeLoading" class="loading-box hidden">
+        <div class="spinner"></div>
+        <div style="font-size: 13px; font-weight: 600; color: var(--text-main);" id="analyzeLoadingText">取引データを取得中...</div>
+        <div class="progress-track"><div class="progress-fill" id="analyzeProgress"></div></div>
+      </div>
     </div>
 
-    <!-- ローディング表示（loading.gif） -->
-    <div id="loadingSection" class="loading-box hidden" style="text-align: center; padding: 24px;">
-      <img src="../images/loading.gif" alt="Loading..." style="width: 60px; height: 60px; margin-bottom: 8px; object-fit: contain;" onerror="this.style.display='none'">
-      <div style="font-size: 13px; font-weight: 600; color: var(--navy, #22384C);">消込実績および取引先データを取得・解析中...</div>
-    </div>
+    <!-- 分析結果を確認する -->
+    <div class="step-box section-gap hidden" id="resultSection">
+      <div class="step-title" style="margin-bottom: 6px;">分析結果を確認する</div>
+      <div class="step-desc">登録履歴の赤い×や赤い点線が、支払が登録されていない月（発生日ベース）です。漏れの疑いがある取引先は一覧の上に表示されます。</div>
 
-    <div id="resultSection" class="step-box hidden">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
-        <div class="step-title" style="margin: 0;">2. 抽出結果一覧（<span id="targetCount">0</span>件）</div>
-        <button class="btn-primary" id="saveToFreeeBtn" type="button" style="padding: 6px 12px; font-size: 12px;">入力した口座情報をfreeeに反映</button>
+      <div class="summary">
+        <div class="summary-stats">
+          <div class="stat"><span class="num danger" id="statAlert">0</span><span class="lbl">漏れの疑い</span></div>
+          <div class="stat"><span class="num" id="statM">0</span><span class="lbl">毎月の支払</span></div>
+          <div class="stat"><span class="num" id="statY">0</span><span class="lbl">毎年の支払</span></div>
+        </div>
       </div>
 
-      <div style="overflow-x: auto;">
-        <table class="all-table" style="width: 100%; border-collapse: collapse; font-size: 12px;">
+      <div class="control-row">
+        <div class="seg" id="viewFilter">
+          <button type="button" data-f="all" class="active">すべて<span class="cnt" id="cntAll"></span></button>
+          <button type="button" data-f="alert">漏れの疑い<span class="cnt" id="cntAlert"></span></button>
+          <button type="button" data-f="毎月">毎月<span class="cnt" id="cntM"></span></button>
+          <button type="button" data-f="毎年">毎年<span class="cnt" id="cntY"></span></button>
+        </div>
+        <input type="search" id="search" placeholder="取引先名・勘定科目で絞り込み" aria-label="取引先名・勘定科目で絞り込み">
+        <label><input type="checkbox" id="showHidden"> 基準未満・除外科目の取引先も表示</label>
+        <span class="meta-line" id="hiddenNote" style="margin-top:0;"></span>
+      </div>
+
+      <details class="exclude-panel">
+        <summary><span>除外する勘定科目<span class="sum-note" id="excludeSummary"></span></span></summary>
+        <div class="exclude-body">
+          <div class="exclude-help">チェックした勘定科目が主な科目になっている取引先は、一覧から外れます（カフェ・コンビニ・タクシーなどの除去用）。この設定はすべての事業所で共通です。</div>
+          <div id="excludeLists"></div>
+          <button type="button" class="link-btn" id="resetExcludeBtn">おすすめの設定に戻す</button>
+        </div>
+      </details>
+
+      <div class="legend">
+        <span><i class="sw on"></i>支払あり（発生日）</span>
+        <span><i class="sw miss"></i>支払なし</span>
+        <span><i class="sw late"></i>今月分が未登録（予定日を過ぎた）</span>
+        <span><i class="sw wait"></i>予定日前</span>
+        <span><i class="sw pre"></i>最初の支払より前</span>
+      </div>
+
+      <div class="table-wrap">
+        <table class="all-table">
           <thead>
-            <tr style="border-bottom: 2px solid #22384C; text-align: left;">
-              <th style="padding: 8px;">取引先コード</th>
-              <th style="padding: 8px;">取引先名</th>
-              <th style="padding: 8px;">最終消込取引日 (発生/決済基準)</th>
-              <th style="padding: 8px;">銀行コード/支店コード</th>
-              <th style="padding: 8px;">種別/口座番号</th>
+            <tr>
+              <th>取引先</th>
+              <th>主な勘定科目</th>
+              <th>登録履歴（発生日ベース）</th>
+              <th>登録時期</th>
             </tr>
           </thead>
-          <tbody id="partnerTableBody"></tbody>
+          <tbody id="resultBody"></tbody>
         </table>
       </div>
 
-      <!-- CSVデータ出力ボタン -->
-      <div style="margin-top: 16px; text-align: right;">
-        <button class="btn-secondary" id="exportCsvBtn" type="button" style="padding: 10px 20px; font-size: 13px; width: auto; display: inline-flex; align-items: center; gap: 8px;">
-          <img src="../images/dounload.png" alt="" style="width: 16px; height: 16px; object-fit: contain;" onerror="this.style.display='none'">
-          CSVデータを出力する
-        </button>
+      <div class="actions-right">
+        <div class="menu-container" style="display: inline-block;">
+          <button class="btn-secondary btn-small" id="exportMenuBtn" type="button"><img src="../images/dtax_puni.png" alt="">CSVデータを出力する</button>
+          <div class="dropdown-menu" id="exportDropdownMenu" style="min-width: 200px;">
+            <button class="dropdown-item" id="exportViewBtn" type="button">表示中の一覧を出力</button>
+            <button class="dropdown-item" id="exportAlertBtn" type="button">漏れの疑いのみを出力</button>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="error-box" id="errorBox" style="display:none; color: red; margin-top: 12px;"></div>
+    <div class="error-box" id="errorBox"></div>
   </div>
 
   <script>
     (function () {
       "use strict";
 
-      const CONFIG = {
-        apiBase: "https://api.freee.co.jp/api/1"
-      };
+      // ---------- カーソル演出（ポータル共通） ----------
+      const cursorDot = document.getElementById('cursorDot');
+      const cursorGlow = document.getElementById('cursorGlow');
+      let mouseX = 0, mouseY = 0, glowX = 0, glowY = 0;
+      window.addEventListener('mousemove', (e) => {
+        mouseX = e.clientX; mouseY = e.clientY;
+        cursorDot.style.opacity = '1'; cursorGlow.style.opacity = '1';
+        cursorDot.style.left = `${mouseX}px`; cursorDot.style.top = `${mouseY}px`;
+      });
+      (function animateGlow() {
+        glowX += (mouseX - glowX) * 0.15; glowY += (mouseY - glowY) * 0.15;
+        cursorGlow.style.left = `${glowX}px`; cursorGlow.style.top = `${glowY}px`;
+        requestAnimationFrame(animateGlow);
+      })();
+      window.addEventListener('click', (e) => {
+        const ripple = document.createElement('div');
+        ripple.className = 'ripple-wave';
+        ripple.style.left = `${e.clientX}px`; ripple.style.top = `${e.clientY}px`;
+        document.body.appendChild(ripple);
+        setTimeout(() => ripple.remove(), 800);
+      });
 
-      let targetPartners = [];
+      // ---------- メニュー ----------
+      const dropdownMenu = document.getElementById('dropdownMenu');
+      const exportDropdownMenu = document.getElementById('exportDropdownMenu');
+      document.getElementById('hamburgerBtn').addEventListener('click', (e) => { e.stopPropagation(); dropdownMenu.classList.toggle('show'); });
+      document.getElementById('exportMenuBtn').addEventListener('click', (e) => { e.stopPropagation(); exportDropdownMenu.classList.toggle('show'); });
+      window.addEventListener('click', () => { dropdownMenu.classList.remove('show'); exportDropdownMenu.classList.remove('show'); });
+      dropdownMenu.addEventListener('click', (e) => e.stopPropagation());
+      exportDropdownMenu.addEventListener('click', (e) => e.stopPropagation());
+      document.getElementById('logoutBtn').addEventListener('click', () => {
+        if (confirm('ログアウトしますか？')) { sessionStorage.clear(); window.location.href = '../portal'; }
+      });
 
-      const analyzePartnersBtn = document.getElementById('analyzePartnersBtn');
-      const loadingSection = document.getElementById('loadingSection');
-      const resultSection = document.getElementById('resultSection');
-      const partnerTableBody = document.getElementById('partnerTableBody');
-      const targetCount = document.getElementById('targetCount');
-      const exportCsvBtn = document.getElementById('exportCsvBtn');
-      const saveToFreeeBtn = document.getElementById('saveToFreeeBtn');
-      const errorBox = document.getElementById('errorBox');
+      // ---------- 認証情報 ----------
+      const token = sessionStorage.getItem('access_token');
+      const companyId = sessionStorage.getItem('company_id');
+      const companyName = sessionStorage.getItem('company_name') || '';
+      if (!token || !companyId) {
+        alert('ログイン情報または事業所選択が失われました。ポータルに戻ります。');
+        window.location.href = '../portal';
+        return;
+      }
+      document.getElementById('currentCompanyLabel').textContent = companyName;
+
+      // ---------- ユーティリティ ----------
+      const pad = (n) => String(n).padStart(2, '0');
+      const fmt = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+      const fmtJp = (d) => `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())}`;
+      const parse = (s) => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d || 1); };
+      const ymKey = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
+      const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+      const addMonths = (d, n) => new Date(d.getFullYear(), d.getMonth() + n, 1);
+      const daysInMonth = (y, m0) => new Date(y, m0 + 1, 0).getDate();
+      const dateIn = (y, m0, day) => new Date(y, m0, Math.min(day, daysInMonth(y, m0)));
+      const dayDiff = (a, b) => Math.round((a - b) / 86400000);
+      const today0 = () => { const t = new Date(); return new Date(t.getFullYear(), t.getMonth(), t.getDate()); };
+      const yen = (n) => '¥' + Math.round(n || 0).toLocaleString('ja-JP');
+      const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+      const median = (arr) => { if (!arr.length) return 1; const a = [...arr].sort((x, y) => x - y); return a[Math.floor((a.length - 1) / 2)]; };
+      const GRACE_MONTHLY = 7;   // 今月分の予定日を何日過ぎたら漏れの疑いにするか
+      const GRACE_ANNUAL = 30;   // 毎年の予定日を何日過ぎたら漏れの疑いにするか
+      const WINDOW = { '毎月': 13, '毎年': 37 };
 
       function showError(msg) {
-        errorBox.textContent = msg;
-        errorBox.style.display = 'block';
+        const box = document.getElementById('errorBox');
+        box.textContent = msg;
+        box.style.display = msg ? 'block' : 'none';
       }
 
-      function clearError() {
-        errorBox.textContent = '';
-        errorBox.style.display = 'none';
+      // ---------- 初期化・保存（数日後に開いた時も残らないよう毎回画面初期化） ----------
+      const STORE_KEY = `paymentWatch:v3:${companyId}`;
+      function defaultStore() { return { analyzed: {}, settings: { ratioTh: { '毎月': 70, '毎年': 60 } }, items: {} }; }
+      
+      // 画面を開くたびに過去の分析結果はクリアして最新分析を促す
+      let store = defaultStore();
+
+      function saveStore() {
+        try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); }
+        catch (e) { showError('ブラウザへの保存に失敗しました。CSVを出力して控えておいてください。'); }
       }
 
-      // 表示データの初期化（開いたときに前回の表示を残さない）
-      function resetUI() {
-        targetPartners = [];
-        partnerTableBody.innerHTML = '';
-        targetCount.textContent = '0';
-        resultSection.classList.add('hidden');
-        loadingSection.classList.add('hidden');
-        clearError();
+      // ---------- 除外する勘定科目（全事業所共通） ----------
+      const EXCLUDE_KEY = 'paymentWatch:v1:excludedAccounts';
+      const RECOMMENDED_EXCLUDE = ['会議費', '交際費', '接待交際費', '旅費交通費', '消耗品費', '事務用品費', '雑費', '仮払金', '立替金'];
+      function loadExcluded() {
+        try { const raw = localStorage.getItem(EXCLUDE_KEY); if (raw) return new Set(JSON.parse(raw)); } catch (e) {}
+        return new Set(RECOMMENDED_EXCLUDE);
       }
+      function saveExcluded() { try { localStorage.setItem(EXCLUDE_KEY, JSON.stringify([...excludedAccounts])); } catch (e) {} }
+      let excludedAccounts = loadExcluded();
+      const isExcluded = (it) => !!it.account && excludedAccounts.has(it.account);
 
-      // ページ読み込み・ブラウザバック（キャッシュ復元）時にクリア
-      window.addEventListener('DOMContentLoaded', resetUI);
-      window.addEventListener('pageshow', resetUI);
-
-      function getAccessToken() {
-        return sessionStorage.getItem('access_token');
-      }
-
-      function getCompanyId() {
-        return sessionStorage.getItem('company_id');
-      }
-
-      // 支出取引から「取引先ID -> { 最終消込日(発生/決済日基準), 回数 }」のマッピングを取得
-      async function fetchSettledPartnerMap(token, companyId) {
-        const partnerInfoMap = new Map();
-        let offset = 0;
-        const limit = 100;
-
-        while (offset < 1000) {
-          const res = await fetch(`${CONFIG.apiBase}/deals?company_id=${companyId}&type=expense&limit=${limit}&offset=${offset}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
+      // ---------- freee API ----------
+      const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+      async function callApi(endpoint) {
+        for (let attempt = 0; attempt < 5; attempt++) {
+          const res = await fetch(`https://api.freee.co.jp/api/1${endpoint}`, {
+            headers: { 'Authorization': `Bearer ${token}`, 'accept': 'application/json' }
           });
-          if (!res.ok) break;
-          const data = await res.json();
-          const deals = data.deals || [];
-          
-          deals.forEach(deal => {
-            const hasPayments = deal.payments && deal.payments.length > 0;
-            const isSettled = deal.status === 'settled' || hasPayments;
-
-            if (deal.partner_id && isSettled) {
-              // 発生日（issue_date）または決済日（payments.date）を算出
-              let dealDate = deal.issue_date;
-              if (hasPayments) {
-                const dates = deal.payments.map(p => p.date).filter(Boolean);
-                if (dates.length > 0) {
-                  dealDate = dates.sort().reverse()[0];
-                }
-              }
-
-              const info = partnerInfoMap.get(deal.partner_id) || { count: 0, lastDate: '' };
-              info.count += 1;
-              if (!info.lastDate || dealDate > info.lastDate) {
-                info.lastDate = dealDate;
-              }
-              partnerInfoMap.set(deal.partner_id, info);
-            }
-          });
-
-          if (deals.length < limit) break;
-          offset += limit;
+          if (res.ok) return await res.json();
+          if (res.status === 401) throw new Error('ログインの有効期限が切れました。ポータルから再ログインしてください。');
+          if (res.status === 429 || res.status >= 500) { await sleep(1500 * (attempt + 1)); continue; }
+          throw new Error(`APIエラー: ${res.status}`);
         }
-
-        return partnerInfoMap;
+        throw new Error('APIの呼び出し回数制限に達しました。しばらく待ってから再実行してください。');
       }
-
-      // 全取引先一覧を取得
-      async function fetchAllPartners(token, companyId) {
-        let partners = [];
-        let offset = 0;
+      async function fetchAllPages(baseEndpoint, key) {
         const limit = 100;
-
+        let offset = 0, all = [];
         while (true) {
-          const res = await fetch(`${CONFIG.apiBase}/partners?company_id=${companyId}&limit=${limit}&offset=${offset}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
-          if (!res.ok) throw new Error(`APIエラー: ${res.status}`);
-          const data = await res.json();
-          const list = data.partners || [];
-          partners = partners.concat(list);
-          if (list.length < limit) break;
+          const data = await callApi(`${baseEndpoint}&limit=${limit}&offset=${offset}`);
+          const batch = data[key] || [];
+          all = all.concat(batch);
+          if (batch.length < limit) break;
           offset += limit;
         }
-
-        return partners;
+        return all;
+      }
+      async function runPool(tasks, concurrency, onDone) {
+        const results = new Array(tasks.length);
+        let next = 0, done = 0;
+        async function worker() {
+          while (next < tasks.length) {
+            const i = next++;
+            results[i] = await tasks[i]();
+            done++; if (onDone) onDone(done, tasks.length);
+          }
+        }
+        await Promise.all(Array.from({ length: Math.min(concurrency, tasks.length) }, worker));
+        return results;
       }
 
-      // 分析ボタン処理
-      analyzePartnersBtn.addEventListener('click', async () => {
-        clearError();
-        loadingSection.classList.remove('hidden');
-        resultSection.classList.add('hidden');
+      const dealCache = {};
+      async function fetchExpenseDeals(start, end, onProgress) {
+        const chunks = [];
+        let cur = new Date(start.getFullYear(), start.getMonth(), 1);
+        while (cur <= end) {
+          const monthEnd = new Date(cur.getFullYear(), cur.getMonth() + 1, 0);
+          chunks.push({ s: fmt(cur), e: fmt(monthEnd > end ? end : monthEnd), past: monthEnd < end });
+          cur = addMonths(cur, 1);
+        }
+        const tasks = chunks.map((c) => async () => {
+          const key = `${c.s}_${c.e}`;
+          if (dealCache[key]) return dealCache[key];
+          const res = await fetchAllPages(`/deals?company_id=${companyId}&type=expense&start_issue_date=${c.s}&end_issue_date=${c.e}`, 'deals');
+          if (c.past) dealCache[key] = res;
+          return res;
+        });
+        return (await runPool(tasks, 3, onProgress)).flat();
+      }
 
-        try {
-          const token = getAccessToken();
-          const companyId = getCompanyId();
-          if (!token || !companyId) {
-            throw new Error('認証セッションが切れています。ポータル画面から再ログインしてください。');
-          }
+      async function fetchAnnualFromTrialPl(start, end, onProgress) {
+        const ranges = [];
+        for (let cur = new Date(start); cur <= end; cur = addMonths(cur, 1)) {
+          const monthEnd = new Date(cur.getFullYear(), cur.getMonth() + 1, 0);
+          ranges.push({ ym: ymKey(cur), s: fmt(cur), e: fmt(monthEnd > end ? end : monthEnd), past: monthEnd < end });
+        }
+        const probe = ranges[ranges.length - 2] || ranges[ranges.length - 1];
+        await getTrialPl(probe);
+        const results = await runPool(ranges.map((r) => async () => {
+          try { return { ym: r.ym, data: await getTrialPl(r) }; }
+          catch (e) { if (/再ログイン|回数制限/.test(e.message)) throw e; return { ym: r.ym, data: null }; }
+        }), 3, onProgress);
 
-          const [settledMap, allPartners] = await Promise.all([
-            fetchSettledPartnerMap(token, companyId),
-            fetchAllPartners(token, companyId)
-          ]);
-
-          targetPartners = [];
-          allPartners.forEach(p => {
-            const info = settledMap.get(p.id);
-            const accountNumber = p.partner_bank_account ? p.partner_bank_account.account_number : '';
-            const isBankEmpty = !accountNumber || accountNumber.trim() === '';
-
-            // 【条件】
-            // 1. 消込実績がある（infoが存在する）
-            // 2. 年1回程度（消込回数が1回のみ。複数回支払っている取引先は除外）
-            // 3. 振込口座番号が未登録（空）
-            if (info && info.count === 1 && isBankEmpty) {
-              targetPartners.push({
-                ...p,
-                last_settled_date: info.lastDate
-              });
-            }
+        const map = {};
+        results.forEach(({ ym, data }) => {
+          const balances = (data && data.trial_pl && data.trial_pl.balances) || [];
+          balances.forEach((b) => {
+            if (!b.account_item_id || !Array.isArray(b.partners)) return;
+            b.partners.forEach((pt) => {
+              if (!pt.id) return;
+              const amt = (pt.debit_amount || 0) - (pt.credit_amount || 0);
+              if (amt <= 0) return;
+              const id = String(pt.id);
+              const p = map[id] || (map[id] = { id, name: pt.name || `取引先ID ${id}`, mon: {}, acc: {}, monthOnly: true });
+              const m = p.mon[ym] || (p.mon[ym] = [1, 0]);
+              m[1] += amt;
+              p.acc[b.account_item_name] = (p.acc[b.account_item_name] || 0) + amt;
+            });
           });
-
-          // 最終消込日の新しい順にソート
-          targetPartners.sort((a, b) => (b.last_settled_date || '').localeCompare(a.last_settled_date || ''));
-
-          renderTable();
-          targetCount.textContent = targetPartners.length;
-          loadingSection.classList.add('hidden');
-          resultSection.classList.remove('hidden');
-        } catch (err) {
-          showError(err.message);
-          loadingSection.classList.add('hidden');
-        }
-      });
-
-      // テーブル描画処理
-      function renderTable() {
-        partnerTableBody.innerHTML = '';
-        if (targetPartners.length === 0) {
-          partnerTableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 16px;">年1回支払いの取引先で口座情報が未登録の対象はありませんでした。</td></tr>';
-          return;
-        }
-
-        targetPartners.forEach((p, idx) => {
-          const tr = document.createElement('tr');
-          tr.style.borderBottom = '1px solid #e2e8f0';
-
-          const bank = p.partner_bank_account || {};
-
-          tr.innerHTML = `
-            <td style="padding: 8px;">${p.code || '-'}</td>
-            <td style="padding: 8px;"><b>${p.name}</b></td>
-            <td style="padding: 8px; font-weight: 600; color: #2563eb;">${p.last_settled_date || '-'}</td>
-            <td style="padding: 8px;">
-              <input type="text" id="bank_code_${idx}" class="input-bank" placeholder="銀行コード" value="${bank.bank_code || ''}">
-              <input type="text" id="branch_code_${idx}" class="input-bank" placeholder="支店コード" value="${bank.branch_code || ''}">
-            </td>
-            <td style="padding: 8px;">
-              <select id="account_type_${idx}" style="padding:4px; font-size:12px; border-radius:4px; border:1px solid #cbd5e1;">
-                <option value="ordinary" ${bank.account_type === 'ordinary' ? 'selected' : ''}>普通</option>
-                <option value="checking" ${bank.account_type === 'checking' ? 'selected' : ''}>当座</option>
-              </select>
-              <input type="text" id="account_num_${idx}" class="input-account-num" placeholder="口座番号(7桁)" value="${bank.account_number || ''}">
-            </td>
-          `;
-          partnerTableBody.appendChild(tr);
         });
+        Object.values(map).forEach((p) => {
+          const keys = Object.keys(p.mon).sort();
+          p.dates = keys.map((k) => `${k}-15`);
+          p.lastDate = p.dates[p.dates.length - 1];
+          p.day = 15;
+          const accs = Object.entries(p.acc).sort((a, b) => b[1] - a[1]);
+          p.account = accs.length ? accs[0][0] : '';
+          delete p.acc;
+          p.avg = keys.reduce((a, k) => a + p.mon[k][1], 0) / keys.length;
+        });
+        return map;
       }
 
-      // CSV出力機能
-      exportCsvBtn.addEventListener('click', () => {
-        if (targetPartners.length === 0) {
-          alert('出力するデータがありません。');
-          return;
+      const plCache = {};
+      async function getTrialPl(r) {
+        const key = `${r.s}_${r.e}`;
+        if (plCache[key]) return plCache[key];
+        const data = await callApi(`/reports/trial_pl?company_id=${companyId}&start_date=${r.s}&end_date=${r.e}&breakdown_display_type=partner`);
+        if (r.past) plCache[key] = data;
+        return data;
+      }
+
+      async function fetchPartnerMap() {
+        const partners = await fetchAllPages(`/partners?company_id=${companyId}`, 'partners');
+        const m = {}; partners.forEach((p) => { m[p.id] = p.name; }); return m;
+      }
+      async function fetchAccountMap() {
+        const data = await callApi(`/account_items?company_id=${companyId}`);
+        const m = {}; (data.account_items || []).forEach((a) => { m[a.id] = a.name; }); return m;
+      }
+
+      // ---------- 集計 ----------
+      function mainAccountId(deal) {
+        const det = deal.details || [];
+        if (!det.length) return null;
+        return det.reduce((a, b) => ((b.amount || 0) > (a.amount || 0) ? b : a)).account_item_id;
+      }
+
+      function aggregate(deals, partnerMap, accountMap) {
+        const map = {};
+        let noPartner = 0;
+        deals.forEach((d) => {
+          if (!d.partner_id) { noPartner++; return; }
+          const id = String(d.partner_id);
+          const p = map[id] || (map[id] = { id, name: partnerMap[d.partner_id] || `取引先ID ${id}`, mon: {}, dates: [], acc: {}, seen: {} });
+          if (p.seen[d.id]) return;
+          p.seen[d.id] = 1;
+          const k = d.issue_date.slice(0, 7);
+          const m = p.mon[k] || (p.mon[k] = [0, 0]);
+          m[0]++; m[1] += d.amount || 0;
+          p.dates.push(d.issue_date);
+          const acc = accountMap[mainAccountId(d)];
+          if (acc) p.acc[acc] = (p.acc[acc] || 0) + 1;
+        });
+        Object.values(map).forEach((p) => {
+          delete p.seen;
+          p.dates.sort();
+          const accs = Object.entries(p.acc).sort((a, b) => b[1] - a[1]);
+          p.account = accs.length ? accs[0][0] : '';
+          delete p.acc;
+          p.lastDate = p.dates[p.dates.length - 1];
+          p.day = median(p.dates.slice(-12).map((s) => parse(s).getDate()));
+          const amts = p.dates.length;
+          const total = Object.values(p.mon).reduce((a, m) => a + m[1], 0);
+          p.avg = total / amts;
+        });
+        return { map, noPartner };
+      }
+
+      // ---------- 継続率と漏れの判定 ----------
+      function monthlyStats(item, today) {
+        const cur = new Date(today.getFullYear(), today.getMonth(), 1);
+        const winStart = addMonths(cur, -12);
+        const has = (d) => !!item.mon[ymKey(d)];
+        let first = null;
+        for (let d = winStart; d <= cur; d = addMonths(d, 1)) if (has(d)) { first = d; break; }
+        if (!first) return null;
+        const curPaid = has(cur);
+        const end = curPaid ? cur : addMonths(cur, -1);
+        if (first > end) return null;
+        let span = 0, hits = 0, run = 0, streak = 0;
+        for (let d = first; d <= end; d = addMonths(d, 1)) {
+          span++;
+          if (has(d)) { hits++; run++; streak = Math.max(streak, run); } else run = 0;
         }
+        if (streak < 2) return null;
+        let trail = 0;
+        for (let d = end; d >= first && !has(d); d = addMonths(d, -1)) trail++;
+        const expectedThisMonth = dateIn(today.getFullYear(), today.getMonth(), item.day);
+        const curLate = !curPaid && addDays(expectedThisMonth, GRACE_MONTHLY) < today;
+        const missing = trail + (curLate ? 1 : 0);
+        let flag;
+        if (missing > 0) flag = { cls: 'miss', text: missing === 1 && curLate ? '今月分が未登録' : `${missing}ヶ月分が未登録` };
+        else if (!curPaid) flag = { cls: 'wait', text: `今月分は${item.day}日頃` };
+        else flag = { cls: 'ok', text: '今月分登録済み' };
+        return { ratio: hits / span, note: `${hits}/${span}ヶ月`, first, curPaid, curLate, alert: missing > 0, flag };
+      }
 
-        const csvRows = [
-          ['取引先ID', '取引先コード', '取引先名', '最終消込取引日(発生/決済基準)', '銀行コード', '支店コード', '口座種別', '口座番号']
-        ];
+      // 毎年：年に1回だけ発生するサブスク等の支払いを検出（複数回ある取引を除外）
+      function annualStats(item, today) {
+        const winStart = addMonths(new Date(today.getFullYear(), today.getMonth(), 1), -36);
+        const dates = item.dates.map(parse).filter((d) => d >= winStart);
+        if (dates.length < 2) return null;
 
-        targetPartners.forEach((p, idx) => {
-          const bankCode = document.getElementById(`bank_code_${idx}`)?.value || '';
-          const branchCode = document.getElementById(`branch_code_${idx}`)?.value || '';
-          const accountType = document.getElementById(`account_type_${idx}`)?.value || 'ordinary';
-          const accountNum = document.getElementById(`account_num_${idx}`)?.value || '';
+        // 【要件変更】年に複数回ある取引は除外する
+        // 全対象月（最大37ヶ月）において、発生月数の合計が年に複数回（平均1.5回/年以上＝37ヶ月で4月以上、または任意の12ヶ月で3月以上）あれば除外
+        const activeMonths = Object.keys(item.mon).filter(k => {
+          const d = parse(`${k}-01`);
+          return d >= winStart;
+        });
+        if (activeMonths.length >= 4) return null; // 37ヶ月間で4ヶ月以上発生があれば「年複数回」とみなして除外
 
-          csvRows.push([
-            p.id,
-            `"${p.code || ''}"`,
-            `"${p.name}"`,
-            `"${p.last_settled_date || ''}"`,
-            `"${bankCode}"`,
-            `"${branchCode}"`,
-            `"${accountType === 'ordinary' ? '普通' : '当座'}"`,
-            `"${accountNum}"`
-          ]);
+        // 直近12ヶ月に2ヶ月以上発生がある場合も除外
+        const recentStart = addMonths(new Date(today.getFullYear(), today.getMonth(), 1), -12);
+        if (activeMonths.filter(k => parse(`${k}-01`) >= recentStart).length >= 2) return null;
+
+        const reps = [];
+        dates.forEach((d) => {
+          const r = reps[reps.length - 1];
+          if (!r || dayDiff(d, r.last) > 60) reps.push({ first: d, last: d }); else r.last = d;
         });
 
-        const csvContent = '\uFEFF' + csvRows.map(r => r.join(',')).join('\n');
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.setAttribute('href', url);
-        link.setAttribute('download', `総合振込_年1回支払い口座未登録取引先一覧_${new Date().toISOString().slice(0, 10)}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        let consecutive = false;
+        for (let i = 1; i < reps.length; i++) {
+          const g = dayDiff(reps[i].first, reps[i - 1].first);
+          if (g >= 330 && g <= 400) { consecutive = true; break; }
+        }
+        if (!consecutive) return null;
+
+        const f = reps[0].first;
+        const anns = []; let hits = 0, counted = 0, next = null;
+        for (let k = 0; k < 6; k++) {
+          const ann = dateIn(f.getFullYear() + k, f.getMonth(), f.getDate());
+          if (reps.some((r) => Math.abs(dayDiff(r.first, ann)) <= 45)) { anns.push({ ann, state: 'hit' }); hits++; counted++; }
+          else if (addDays(ann, GRACE_ANNUAL) < today) { anns.push({ ann, state: 'miss' }); counted++; }
+          else { anns.push({ ann, state: 'next' }); next = ann; break; }
+        }
+        const lastCounted = anns.filter((a) => a.state !== 'next').pop();
+        const alert = !!lastCounted && lastCounted.state === 'miss';
+        let flag;
+        const when = (d) => (item.monthOnly ? `${d.getMonth() + 1}月頃` : `${d.getMonth() + 1}月${d.getDate()}日頃`);
+        if (alert) flag = { cls: 'miss', text: `${lastCounted.ann.getFullYear()}年分が未登録（${lastCounted.ann.getMonth() + 1}月頃）` };
+        else if (next && next <= today) flag = { cls: 'wait', text: `予定時期を過ぎています（${when(next)}・猶予内）` };
+        else if (next && dayDiff(next, today) <= 30) flag = { cls: 'wait', text: `まもなく（${when(next)}）` };
+        else flag = { cls: 'ok', text: next ? `次回 ${next.getFullYear()}年${next.getMonth() + 1}月頃` : '登録済み' };
+        return { ratio: counted ? hits / counted : 0, note: `${hits}/${counted}年`, anns, alert, flag };
+      }
+
+      const statsFor = (it, today) => (it.kind === '毎年' ? annualStats(it, today) : monthlyStats(it, today));
+      const thOf = (kind) => (Number(store.settings.ratioTh[kind]) || 0) / 100;
+
+      // ---------- 登録履歴の描画 ----------
+      function monthlyHistoryHtml(it, st, today) {
+        const cur = new Date(today.getFullYear(), today.getMonth(), 1);
+        const months = []; for (let i = 12; i >= 0; i--) months.push(addMonths(cur, -i));
+        const max = Math.max(1, ...months.map((d) => (it.mon[ymKey(d)] || [0, 0])[1]));
+        const cells = months.map((d, idx) => {
+          const k = ymKey(d), m = it.mon[k];
+          const isCur = idx === months.length - 1;
+          let cls = '', bar = '', tip = `発生年月: ${d.getFullYear()}年${d.getMonth() + 1}月\n`;
+          if (m) { cls = 'on'; bar = `<i class="tl-bar" style="height:${Math.max(18, Math.round((m[1] / max) * 100))}%"></i>`; tip += `${m[0]}件 ${yen(m[1])}`; }
+          else if (st && d < st.first) { cls = 'pre'; tip += '最初の支払より前'; }
+          else if (isCur) { cls = st && st.curLate ? 'late' : 'wait'; tip += st && st.curLate ? `未登録（発生予定 ${it.day}日頃）` : `予定日前（${it.day}日頃）`; }
+          else { cls = 'miss'; tip += '支払なし'; }
+          const lbl = d.getMonth() === 0 || idx === 0 ? `<span class="tl-lbl yr">${String(d.getFullYear()).slice(2)}/${d.getMonth() + 1}</span>` : `<span class="tl-lbl">${d.getMonth() + 1}</span>`;
+          return `<div class="tl-cell ${cls}" title="${esc(tip)}"><div class="tl-track">${bar}</div>${lbl}</div>`;
+        }).join('');
+        return `<div class="tl" role="img" aria-label="直近13ヶ月の登録履歴（発生日基準）">${cells}</div>`;
+      }
+
+      function annualHistoryHtml(it, st, today) {
+        const winStart = addMonths(new Date(today.getFullYear(), today.getMonth(), 1), -36);
+        const missMonths = new Set(), waitMonths = new Set();
+        (st ? st.anns : []).forEach((a) => {
+          if (a.state === 'miss') missMonths.add(ymKey(a.ann));
+          if (a.state === 'next') waitMonths.add(ymKey(a.ann));
+        });
+        let html = '<div class="yg" role="img" aria-label="年ごとの登録履歴（発生日基準）"><span></span>';
+        for (let m = 1; m <= 12; m++) html += `<span class="h">${m}</span>`;
+        for (let y = winStart.getFullYear(); y <= today.getFullYear(); y++) {
+          html += `<span class="y">${y}</span>`;
+          for (let m0 = 0; m0 < 12; m0++) {
+            const d = new Date(y, m0, 1), k = ymKey(d), mm = it.mon[k];
+            let cls = '', tip = `発生年月: ${y}年${m0 + 1}月\n`;
+            if (d < winStart) { cls = 'out'; tip = ''; }
+            else if (mm) { cls = 'on'; tip += it.monthOnly ? yen(mm[1]) : `${mm[0]}件 ${yen(mm[1])}`; }
+            else if (missMonths.has(k)) { cls = 'miss'; tip += '発生予定時期に登録なし'; }
+            else if (waitMonths.has(k)) { cls = 'wait'; tip += '次回の発生予定'; }
+            else if (d > today) { cls = 'future'; tip = ''; }
+            else tip += 'なし';
+            html += `<span class="c ${cls}"${tip ? ` title="${esc(tip)}"` : ''}></span>`;
+          }
+        }
+        return html + '</div>';
+      }
+
+      function historyHtml(it, st, today) {
+        const th = thOf(it.kind);
+        const pct = st ? Math.round(st.ratio * 100) : 0;
+        const body = it.kind === '毎年' ? annualHistoryHtml(it, st, today) : monthlyHistoryHtml(it, st, today);
+        const flags = [];
+        if (st) flags.push(`<span class="flag ${st.flag.cls}">${esc(st.flag.text)}</span>`);
+        if (isExcluded(it)) flags.push('<span class="flag ex">除外する勘定科目</span>');
+        if (st && st.ratio + 1e-9 < th) flags.push('<span class="flag ex">継続率が基準未満</span>');
+        return `${body}<div class="hist-foot"><span class="meter ${st && st.ratio + 1e-9 < th ? 'low' : ''}"><i style="width:${pct}%"></i></span><span>継続率 ${pct}%（${esc(st ? st.note : '—')}）</span>${flags.join('')}</div>`;
+      }
+
+      const accHtml = (name) => (name ? esc(name).split(/(?=[【（(［\[])/).map((t) => `<span style="white-space:nowrap">${t}</span>`).join('<wbr>') : '—');
+      function lastDateText(it) {
+        const d = parse(it.lastDate);
+        return it.monthOnly ? `${d.getFullYear()}年${d.getMonth() + 1}月` : fmtJp(d);
+      }
+      function timingText(it) {
+        if (it.kind === '毎年' && it.monthOnly) return `毎年 ${parse(it.lastDate).getMonth() + 1}月頃`;
+        if (it.kind === '毎年') { const d = parse(it.lastDate); return `毎年 ${d.getMonth() + 1}月${d.getDate()}日頃`; }
+        return `毎月 ${it.day}日頃`;
+      }
+
+      // ---------- 一覧 ----------
+      let viewFilter = 'all';
+      function computeRows() {
+        const today = today0();
+        return Object.values(store.items).map((it) => {
+          const st = statsFor(it, today);
+          const visible = !!st && !isExcluded(it) && st.ratio + 1e-9 >= thOf(it.kind);
+          return { it, st, visible, alert: visible && st.alert };
+        });
+      }
+      function currentRows() {
+        const all = computeRows();
+        const showHidden = document.getElementById('showHidden').checked;
+        const q = document.getElementById('search').value.trim().toLowerCase();
+        return all
+          .filter((r) => showHidden || r.visible)
+          .filter((r) => viewFilter === 'all' || (viewFilter === 'alert' ? r.alert : r.it.kind === viewFilter))
+          .filter((r) => !q || r.it.name.toLowerCase().includes(q) || (r.it.account || '').toLowerCase().includes(q))
+          .sort((a, b) => (b.alert - a.alert) || (b.visible - a.visible) || (a.it.kind < b.it.kind ? -1 : a.it.kind > b.it.kind ? 1 : 0) || a.it.name.localeCompare(b.it.name, 'ja'));
+      }
+
+      function render() {
+        renderMeta();
+        const section = document.getElementById('resultSection');
+        const all = computeRows();
+        if (!all.length) { section.classList.add('hidden'); return; }
+        section.classList.remove('hidden');
+
+        const vis = all.filter((r) => r.visible);
+        const alertN = vis.filter((r) => r.alert).length;
+        const mN = vis.filter((r) => r.it.kind === '毎月').length;
+        const yN = vis.filter((r) => r.it.kind === '毎年').length;
+        document.getElementById('statAlert').textContent = `${alertN} 件`;
+        document.getElementById('statM').textContent = `${mN} 件`;
+        document.getElementById('statY').textContent = `${yN} 件`;
+        document.getElementById('cntAll').textContent = vis.length;
+        document.getElementById('cntAlert').textContent = alertN;
+        document.getElementById('cntM').textContent = mN;
+        document.getElementById('cntY').textContent = yN;
+        const hiddenN = all.length - vis.length;
+        const showHidden = document.getElementById('showHidden').checked;
+        document.getElementById('hiddenNote').textContent = hiddenN ? `基準未満・除外科目: ${hiddenN}件${showHidden ? '' : '（非表示）'}` : '';
+        renderExcludePanel(all.map((r) => r.it));
+
+        const today = today0();
+        const rows = currentRows();
+        const tbody = document.getElementById('resultBody');
+        if (!rows.length) {
+          tbody.innerHTML = `<tr class="empty-row"><td colspan="4">${viewFilter === 'alert' ? '漏れの疑いがある取引先はありません。' : '条件に合う取引先はありません。'}</td></tr>`;
+          return;
+        }
+        tbody.innerHTML = rows.map(({ it, st, visible, alert }) => `
+          <tr class="${alert ? 'alert-row' : ''}" style="${visible ? '' : 'opacity:0.6;'}">
+            <td class="col-name"><span class="freq-chip ${it.kind === '毎月' ? 'm' : 'y'}">${it.kind}</span><span class="pname">${esc(it.name)}</span></td>
+            <td class="col-acc">${accHtml(it.account)}</td>
+            <td class="col-hist">${historyHtml(it, st, today)}</td>
+            <td class="col-date">${esc(timingText(it))}<span class="sub">最終発生日 ${esc(lastDateText(it))}</span></td>
+          </tr>`).join('');
+      }
+
+      document.getElementById('viewFilter').addEventListener('click', (e) => {
+        const b = e.target.closest('button'); if (!b) return;
+        viewFilter = b.dataset.f;
+        document.querySelectorAll('#viewFilter button').forEach((x) => x.classList.toggle('active', x === b));
+        render();
+      });
+      document.getElementById('search').addEventListener('input', render);
+      document.getElementById('showHidden').addEventListener('change', render);
+
+      function renderExcludePanel(items) {
+        const counts = {};
+        items.forEach((it) => { if (it.account) counts[it.account] = (counts[it.account] || 0) + 1; });
+        const names = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
+        const chip = (n) => `<label class="acc-chip ${excludedAccounts.has(n) ? 'on' : ''}"><input type="checkbox" data-acc="${esc(n)}" ${excludedAccounts.has(n) ? 'checked' : ''}>${esc(n)}<span class="n">${counts[n]}</span>${RECOMMENDED_EXCLUDE.includes(n) ? '<span class="rec">おすすめ</span>' : ''}</label>`;
+        const on = names.filter((n) => excludedAccounts.has(n));
+        const off = names.filter((n) => !excludedAccounts.has(n));
+        document.getElementById('excludeLists').innerHTML =
+          `<div class="acc-group-title">除外中（${on.length}科目）</div><div class="acc-list">${on.map(chip).join('') || '<span class="exclude-help">なし</span>'}</div>` +
+          `<div class="acc-group-title">チェック対象（${off.length}科目）</div><div class="acc-list">${off.map(chip).join('') || '<span class="exclude-help">なし</span>'}</div>`;
+        document.getElementById('excludeSummary').textContent = `${on.length}科目を除外中（取引先 ${items.filter(isExcluded).length}件）`;
+      }
+      document.getElementById('excludeLists').addEventListener('change', (e) => {
+        const cb = e.target.closest('input[data-acc]'); if (!cb) return;
+        if (cb.checked) excludedAccounts.add(cb.dataset.acc); else excludedAccounts.delete(cb.dataset.acc);
+        saveExcluded(); render();
+      });
+      document.getElementById('resetExcludeBtn').addEventListener('click', () => {
+        excludedAccounts = new Set(RECOMMENDED_EXCLUDE); saveExcluded(); render();
       });
 
-      // freee API への口座一括反映処理
-      saveToFreeeBtn.addEventListener('click', async () => {
-        const token = getAccessToken();
-        const companyId = getCompanyId();
+      function renderMeta() {
+        document.getElementById('analyzeMeta').innerHTML = ['毎月', '毎年'].map((k) => {
+          const info = store.analyzed[k];
+          if (!info) return `${k}: まだ分析していません。「${k}の支払を分析する」ボタンを押してください。`;
+          let line = `${k}: ${fmtJp(new Date(info.at))}に分析（${info.source || '取引一覧'}・直近${info.months}ヶ月）`;
+          if (info.noPartner) line += `／ 取引先未設定の取引 ${info.noPartner}件は集計対象外`;
+          return line;
+        }).join('<br>');
+      }
 
-        const updateTargets = [];
-        targetPartners.forEach((p, idx) => {
-          const bankCode = document.getElementById(`bank_code_${idx}`)?.value.trim();
-          const branchCode = document.getElementById(`branch_code_${idx}`)?.value.trim();
-          const accountType = document.getElementById(`account_type_${idx}`)?.value;
-          const accountNum = document.getElementById(`account_num_${idx}`)?.value.trim();
+      // ---------- 分析 ----------
+      let analyzeKind = '毎月';
+      const ratioInput = document.getElementById('ratioTh');
+      function syncKindUi() {
+        document.querySelectorAll('#kindSelect button').forEach((x) => { const on = x.dataset.k === analyzeKind; x.classList.toggle('active', on); x.setAttribute('aria-pressed', on); });
+        document.getElementById('runAnalyzeBtn').textContent = `${analyzeKind}の支払を分析する`;
+        ratioInput.value = store.settings.ratioTh[analyzeKind];
+      }
+      document.getElementById('kindSelect').addEventListener('click', (e) => {
+        const b = e.target.closest('button'); if (!b) return;
+        analyzeKind = b.dataset.k; syncKindUi();
+      });
+      ratioInput.addEventListener('change', () => {
+        const v = Math.min(100, Math.max(0, Number(ratioInput.value) || 0));
+        store.settings.ratioTh[analyzeKind] = v; ratioInput.value = v;
+        saveStore(); render();
+      });
 
-          if (accountNum) {
-            updateTargets.push({
-              id: p.id,
-              name: p.name,
-              bank: {
-                bank_code: bankCode,
-                branch_code: branchCode,
-                account_type: accountType,
-                account_number: accountNum
-              }
-            });
-          }
-        });
-
-        if (updateTargets.length === 0) {
-          alert('更新対象となる口座番号が入力されていません。');
-          return;
-        }
-
-        if (!confirm(`${updateTargets.length} 件の取引先に振込口座情報を登録しますか？`)) return;
-
-        saveToFreeeBtn.disabled = true;
-        clearError();
-
+      document.getElementById('runAnalyzeBtn').addEventListener('click', async () => {
+        const btn = document.getElementById('runAnalyzeBtn');
+        const loading = document.getElementById('analyzeLoading');
+        const text = document.getElementById('analyzeLoadingText');
+        const bar = document.getElementById('analyzeProgress');
+        showError('');
+        btn.disabled = true; loading.classList.remove('hidden'); bar.style.width = '0%';
         try {
-          for (const t of updateTargets) {
-            const res = await fetch(`${CONFIG.apiBase}/partners/${t.id}`, {
-              method: 'PUT',
-              headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                company_id: Number(companyId),
-                partner_bank_account: t.bank
-              })
-            });
+          const kind = analyzeKind;
+          const months = WINDOW[kind];
+          const today = today0();
+          const start = addMonths(new Date(today.getFullYear(), today.getMonth(), 1), -(months - 1));
 
-            if (!res.ok) {
-              const errData = await res.json().catch(() => ({}));
-              throw new Error(`[${t.name}] の口座更新に失敗しました: ${JSON.stringify(errData)}`);
+          const progress = (label) => (d, t) => { text.textContent = `${label}... ${d}/${t}ヶ月`; bar.style.width = `${Math.round((d / t) * 100)}%`; };
+          let map = null, noPartner = 0, source = '取引一覧';
+          if (kind === '毎年') {
+            try {
+              text.textContent = '試算表を取得中...';
+              map = await fetchAnnualFromTrialPl(start, today, progress('試算表を取得中'));
+              source = '試算表';
+            } catch (e) {
+              if (/再ログイン|回数制限/.test(e.message)) throw e;
+              map = null;
             }
           }
+          if (!map) {
+            text.textContent = '取引先・勘定科目を取得中...';
+            const [partnerMap, accountMap] = await Promise.all([fetchPartnerMap(), fetchAccountMap()]);
+            const deals = await fetchExpenseDeals(start, today, progress('支出取引を取得中'));
+            text.textContent = `${deals.length.toLocaleString()}件の取引を集計中...`;
+            ({ map, noPartner } = aggregate(deals, partnerMap, accountMap));
+          }
 
-          alert('振込口座情報の一括登録が完了しました！');
-          resetUI();
+          Object.keys(store.items).forEach((key) => { if (store.items[key].kind === kind) delete store.items[key]; });
+          Object.values(map).forEach((p) => {
+            const it = Object.assign(p, { kind });
+            it.dates = kind === '毎年' ? it.dates.slice(-60) : [];
+            if (!statsFor(it, today)) return;
+            store.items[`${kind}:${it.id}`] = it;
+          });
+          store.analyzed[kind] = { at: new Date().toISOString(), months, noPartner, source };
+          saveStore();
+          render();
         } catch (err) {
-          showError('更新エラー: ' + err.message);
+          showError('分析に失敗しました: ' + err.message);
         } finally {
-          saveToFreeeBtn.disabled = false;
+          loading.classList.add('hidden'); btn.disabled = false;
         }
       });
+
+      // ---------- CSV ----------
+      const csvCell = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+      function download(csv, name) {
+        const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = name;
+        document.body.appendChild(a); a.click();
+        document.body.removeChild(a); URL.revokeObjectURL(url);
+      }
+      function exportCsv(type) {
+        const rows = type === 'alert' ? computeRows().filter((r) => r.alert) : currentRows();
+        exportDropdownMenu.classList.remove('show');
+        if (!rows.length) { alert(type === 'alert' ? '漏れの疑いがある取引先はありません。' : '出力するデータがありません。'); return; }
+        const today = today0();
+        const cur = new Date(today.getFullYear(), today.getMonth(), 1);
+        const monthCols = []; for (let i = 12; i >= 0; i--) monthCols.push(ymKey(addMonths(cur, -i)));
+        let csv = ['事業所', '頻度', '取引先ID', '取引先名', '主な勘定科目', '状況', '継続率', '継続月数（年数）', '通常の登録時期', '最終発生日', '平均金額', ...monthCols].map(csvCell).join(',') + '\n';
+        rows.forEach(({ it, st }) => {
+          csv += [companyName, it.kind, it.id, it.name, it.account, st ? st.flag.text : '', st ? `${Math.round(st.ratio * 100)}%` : '', st ? st.note : '', timingText(it), it.monthOnly ? it.lastDate.slice(0, 7) : it.lastDate, Math.round(it.avg),
+            ...monthCols.map((k) => (it.mon[k] ? it.mon[k][1] : ''))].map(csvCell).join(',') + '\n';
+        });
+        const safeName = (companyName || companyId).replace(/[\\/:*?"<>|\s]/g, '_');
+        download(csv, `支払登録漏れ_${type === 'alert' ? '漏れの疑い' : '一覧'}_${safeName}_${fmt(today).replace(/-/g, '')}.csv`);
+      }
+      document.getElementById('exportViewBtn').addEventListener('click', () => exportCsv('view'));
+      document.getElementById('exportAlertBtn').addEventListener('click', () => exportCsv('alert'));
+
+      document.getElementById('resetBtn').addEventListener('click', () => {
+        if (!confirm('この事業所の分析結果を削除します。よろしいですか？')) return;
+        try { localStorage.removeItem(STORE_KEY); } catch (e) {}
+        store = defaultStore();
+        dropdownMenu.classList.remove('show');
+        syncKindUi(); render();
+      });
+
+      // ---------- 初期表示 ----------
+      syncKindUi();
+      render();
     })();
   </script>
 </body>
