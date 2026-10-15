@@ -205,11 +205,13 @@
           return;
 
           // renderTable 内の fetch 処理部分
+// 非同期で Gemini 検索APIをコール
 fetchCandidateDirectFromGemini(p, index, GEMINI_API_KEY).then(result => {
   const cell = document.getElementById(`candidate_cell_${index}`);
   if (!cell) return;
 
-  if (result.number) {
+  // result.number に T番号が入っているか判定
+  if (result && result.number) {
     cell.innerHTML = `
       <span class="candidate-badge" onclick="applyCandidate(${index}, '${result.number}')">
         ✨ 候補: ${result.number} (適用)
@@ -217,8 +219,9 @@ fetchCandidateDirectFromGemini(p, index, GEMINI_API_KEY).then(result => {
       <a href="https://www.invoice-kohyo.nta.go.jp/" target="_blank" style="font-size: 11px; color: #2563eb; text-decoration: underline;">国税庁Web</a>
     `;
   } else {
+    const errorMsg = result ? result.debugMsg : '取得失敗';
     cell.innerHTML = `
-      <span class="no-candidate" title="${result.rawText || ''}">❌ ${result.debugMsg}</span>
+      <span class="no-candidate" style="color: #ef4444;" title="${result?.rawText || ''}">❌ ${errorMsg}</span>
       <br>
       <a href="https://www.google.com/search?q=${encodeURIComponent(p.name + ' インボイス 登録番号')}" target="_blank" style="font-size: 10px; color: #64748b; text-decoration: underline;">手動Google検索</a>
     `;
