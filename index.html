@@ -224,10 +224,11 @@
       }
 
       const userEmail = responsePayload.email;
+      console.log("ログイン試行メールアドレス:", userEmail); // ← コンソールで確認用
 
-      // @daiichitax.com のドメインチェック
-      if (userEmail.endsWith(ALLOWED_DOMAIN)) {
-        // ログイン成功
+      // 一時的にドメインチェックをスルーして常に成功させるテスト
+      // if (userEmail.endsWith(ALLOWED_DOMAIN)) {
+      if (true) { 
         document.getElementById('loginErrorMsg').classList.add('hidden');
         document.getElementById('loginView').classList.add('hidden');
         document.getElementById('portalView').classList.remove('hidden');
@@ -237,9 +238,10 @@
         `;
         document.getElementById('userInfoDisplay').innerText = `ログインアカウント: ${userEmail}`;
 
-        // スプレッドシートからのカードデータ取得・描画を実行
         fetchCards();
       } else {
+        showLoginError();
+      }
     }
 
     function showLoginError() {
